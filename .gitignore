@@ -1,0 +1,40 @@
+# Environment variables
+.env
+.env.local
+.env.production
+
+# API keys and secrets
+*.key
+*.pem
+secrets/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Model files (too large for GitHub)
+../pre-train/
+models/*.bin
+models/*.safetensors
+
+# Vector database
+vector_db/
+*.db
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,490 @@
+{
+  "alpha": [
+    {
+      "scenario": "Student asks how to choose research direction and advisor",
+      "responses": [
+        "Suggest to first understand each professor's research areas and publications",
+        "Can attend academic lectures and seminars to understand latest research trends",
+        "Communicate with current students to understand advisor's mentoring style"
+      ]
+    },
+    {
+      "scenario": "Student asks how to prepare for academic conference presentation",
+      "responses": [
+        "Ensure PPT structure is clear and highlights key points",
+        "Practice presentation time control and prepare for possible questions",
+        "Understand audience background in advance and adjust content depth"
+      ]
+    },
+    {
+      "scenario": "Student asks how to improve academic writing skills",
+      "responses": [
+        "Read excellent academic papers and learn writing structure",
+        "Attend writing workshops and seek advisor feedback",
+        "Use academic writing tools and templates"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 4",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 5",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 6",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 7",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 8",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 9",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 10",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 11",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 12",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 13",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 14",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    },
+    {
+      "scenario": "alpha type student scenario 15",
+      "responses": [
+        "Suggestion 1 for alpha type students",
+        "Suggestion 2 for alpha type students",
+        "Suggestion 3 for alpha type students"
+      ]
+    }
+  ],
+  "beta": [
+    {
+      "scenario": "Student asks how to find internship opportunities",
+      "responses": [
+        "Check internship resources at school career center",
+        "Attend job fairs and networking events",
+        "Actively contact relevant institutions and companies"
+      ]
+    },
+    {
+      "scenario": "Student asks how to balance study and work",
+      "responses": [
+        "Develop detailed time management plan",
+        "Communicate with employer about flexible work arrangements",
+        "Seek support from classmates and advisors"
+      ]
+    },
+    {
+      "scenario": "Student asks how to apply theory to practice",
+      "responses": [
+        "Actively apply classroom learning in internships",
+        "Participate in practical projects and research",
+        "Communicate with industry professionals"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 4",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 5",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 6",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 7",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 8",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 9",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 10",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 11",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 12",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 13",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 14",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    },
+    {
+      "scenario": "beta type student scenario 15",
+      "responses": [
+        "Suggestion 1 for beta type students",
+        "Suggestion 2 for beta type students",
+        "Suggestion 3 for beta type students"
+      ]
+    }
+  ],
+  "delta": [
+    {
+      "scenario": "Student asks how to plan career development path",
+      "responses": [
+        "Assess your skills and interests",
+        "Research skill requirements for target positions",
+        "Develop short-term and long-term career goals"
+      ]
+    },
+    {
+      "scenario": "Student asks how to build professional network",
+      "responses": [
+        "Attend industry conferences and seminars",
+        "Join professional organizations and LinkedIn groups",
+        "Actively contact alumni and industry experts"
+      ]
+    },
+    {
+      "scenario": "Student asks how to prepare for interviews",
+      "responses": [
+        "Research company and position requirements",
+        "Prepare STAR method for behavioral questions",
+        "Practice common interview questions"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 4",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 5",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 6",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 7",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 8",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 9",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 10",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 11",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 12",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 13",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 14",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    },
+    {
+      "scenario": "delta type student scenario 15",
+      "responses": [
+        "Suggestion 1 for delta type students",
+        "Suggestion 2 for delta type students",
+        "Suggestion 3 for delta type students"
+      ]
+    }
+  ],
+  "echo": [
+    {
+      "scenario": "Student asks how to handle study pressure",
+      "responses": [
+        "Establish healthy lifestyle habits and routine",
+        "Seek psychological counseling and support services",
+        "Share experiences with classmates and support each other"
+      ]
+    },
+    {
+      "scenario": "Student asks how to improve study efficiency",
+      "responses": [
+        "Use time management techniques like Pomodoro method",
+        "Find suitable study environment and methods",
+        "Regularly review and summarize learning content"
+      ]
+    },
+    {
+      "scenario": "Student asks how to form study groups",
+      "responses": [
+        "Actively meet classmates in class",
+        "Use social media and forums to find study partners",
+        "Regularly organize study discussions and mutual help activities"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 4",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 5",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 6",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 7",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 8",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 9",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 10",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 11",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 12",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 13",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 14",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    },
+    {
+      "scenario": "echo type student scenario 15",
+      "responses": [
+        "Suggestion 1 for echo type students",
+        "Suggestion 2 for echo type students",
+        "Suggestion 3 for echo type students"
+      ]
+    }
+  ]
+}
