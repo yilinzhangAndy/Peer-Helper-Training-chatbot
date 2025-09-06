@@ -58,29 +58,29 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .intent-exploration { 
-        background: linear-gradient(45deg, #ffeb3b, #ffc107); 
-        color: #000; 
+        background: linear-gradient(45deg, #fff3e0, #ffe0b2); 
+        color: #e65100; 
         border-color: #ff9800;
     }
     .intent-feedback { 
-        background: linear-gradient(45deg, #4caf50, #8bc34a); 
-        color: #fff; 
-        border-color: #2e7d32;
+        background: linear-gradient(45deg, #e8f5e8, #c8e6c9); 
+        color: #2e7d32; 
+        border-color: #4caf50;
     }
     .intent-goal { 
-        background: linear-gradient(45deg, #ff9800, #ff5722); 
-        color: #fff; 
-        border-color: #e65100;
+        background: linear-gradient(45deg, #fff3e0, #ffcc80); 
+        color: #e65100; 
+        border-color: #ff9800;
     }
     .intent-problem { 
-        background: linear-gradient(45deg, #f44336, #e91e63); 
-        color: #fff; 
-        border-color: #c62828;
+        background: linear-gradient(45deg, #ffebee, #ffcdd2); 
+        color: #c62828; 
+        border-color: #f44336;
     }
     .intent-understanding { 
-        background: linear-gradient(45deg, #9c27b0, #673ab7); 
-        color: #fff; 
-        border-color: #6a1b9a;
+        background: linear-gradient(45deg, #f3e5f5, #e1bee7); 
+        color: #6a1b9a; 
+        border-color: #9c27b0;
     }
     .cloud-info {
         background-color: #f0f8ff;
