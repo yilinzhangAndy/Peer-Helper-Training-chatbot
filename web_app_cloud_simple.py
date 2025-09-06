@@ -40,12 +40,14 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .student-message {
-        background-color: #e8f5e8;
+        background-color: #ffffff;
         border-left: 4px solid #4caf50;
+        border: 1px solid #e0e0e0;
     }
     .advisor-message {
-        background-color: #e3f2fd;
+        background-color: #ffffff;
         border-left: 4px solid #2196f3;
+        border: 1px solid #e0e0e0;
     }
     .intent-badge {
         display: inline-block;
@@ -83,11 +85,12 @@ st.markdown("""
         border-color: #9c27b0;
     }
     .cloud-info {
-        background-color: #f0f8ff;
+        background-color: #ffffff;
         padding: 1rem;
         border-radius: 10px;
-        border-left: 4px solid #1f77b4;
+        border: 2px solid #e3f2fd;
         margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
