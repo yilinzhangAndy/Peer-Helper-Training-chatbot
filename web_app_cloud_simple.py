@@ -40,14 +40,16 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .student-message {
-        background-color: #ffffff;
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
         border-left: 4px solid #4caf50;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #81c784;
+        color: #2e7d32;
     }
     .advisor-message {
-        background-color: #ffffff;
+        background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
         border-left: 4px solid #2196f3;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #64b5f6;
+        color: #1565c0;
     }
     .intent-badge {
         display: inline-block;
@@ -85,12 +87,13 @@ st.markdown("""
         border-color: #9c27b0;
     }
     .cloud-info {
-        background-color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff;
         padding: 1rem;
         border-radius: 10px;
-        border: 2px solid #e3f2fd;
+        border: 2px solid #5a67d8;
         margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
 </style>
 """, unsafe_allow_html=True)
