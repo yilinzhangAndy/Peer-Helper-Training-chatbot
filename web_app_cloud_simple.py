@@ -49,17 +49,39 @@ st.markdown("""
     }
     .intent-badge {
         display: inline-block;
-        padding: 0.2rem 0.5rem;
-        border-radius: 15px;
-        font-size: 0.8rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
         font-weight: bold;
-        margin-left: 0.5rem;
+        margin-left: 0.8rem;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .intent-exploration { background-color: #ffeb3b; color: #000; }
-    .intent-feedback { background-color: #4caf50; color: #fff; }
-    .intent-goal { background-color: #ff9800; color: #fff; }
-    .intent-problem { background-color: #f44336; color: #fff; }
-    .intent-understanding { background-color: #9c27b0; color: #fff; }
+    .intent-exploration { 
+        background: linear-gradient(45deg, #ffeb3b, #ffc107); 
+        color: #000; 
+        border-color: #ff9800;
+    }
+    .intent-feedback { 
+        background: linear-gradient(45deg, #4caf50, #8bc34a); 
+        color: #fff; 
+        border-color: #2e7d32;
+    }
+    .intent-goal { 
+        background: linear-gradient(45deg, #ff9800, #ff5722); 
+        color: #fff; 
+        border-color: #e65100;
+    }
+    .intent-problem { 
+        background: linear-gradient(45deg, #f44336, #e91e63); 
+        color: #fff; 
+        border-color: #c62828;
+    }
+    .intent-understanding { 
+        background: linear-gradient(45deg, #9c27b0, #673ab7); 
+        color: #fff; 
+        border-color: #6a1b9a;
+    }
     .cloud-info {
         background-color: #f0f8ff;
         padding: 1rem;
@@ -384,8 +406,9 @@ def main():
             st.markdown(f"""
             <div class="chat-message student-message">
                 <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
+                <br><br>
                 <span class="intent-badge {intent_class}">
-                    {intent_info["intent"]} ({intent_info["confidence"]:.2f})
+                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
                 </span>
             </div>
             """, unsafe_allow_html=True)
@@ -399,8 +422,9 @@ def main():
             st.markdown(f"""
             <div class="chat-message advisor-message">
                 <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
+                <br><br>
                 <span class="intent-badge {intent_class}">
-                    {intent_info["intent"]} ({intent_info["confidence"]:.2f})
+                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
                 </span>
             </div>
             """, unsafe_allow_html=True)
