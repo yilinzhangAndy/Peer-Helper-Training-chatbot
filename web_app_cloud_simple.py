@@ -416,6 +416,18 @@ def main():
     st.markdown("""
     <div class="cloud-info">
         <h4>📋 How It Works</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Use st.info for the content with custom styling
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+                padding: 1rem; 
+                border-radius: 10px; 
+                border: 2px solid #5a67d8; 
+                margin: 1rem 0; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
         <p><strong>1️⃣ Choose Your Training Scenario</strong><br>
         Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice</p>
         
