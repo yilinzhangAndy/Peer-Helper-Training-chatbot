@@ -416,14 +416,20 @@ def main():
     st.markdown("""
     <div class="cloud-info">
         <h4>📋 How It Works</h4>
-        <p><strong>1️⃣ Choose Your Training Scenario</strong><br>
-        Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice</p>
+        <div style="margin: 1rem 0;">
+            <strong>1️⃣ Choose Your Training Scenario</strong><br>
+            <span style="margin-left: 1.5rem; color: #666;">Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice</span>
+        </div>
         
-        <p><strong>2️⃣ Start Conversation Training</strong><br>
-        Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles</p>
+        <div style="margin: 1rem 0;">
+            <strong>2️⃣ Start Conversation Training</strong><br>
+            <span style="margin-left: 1.5rem; color: #666;">Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles</span>
+        </div>
         
-        <p><strong>3️⃣ Get Real-time Feedback</strong><br>
-        Our system analyzes your responses using AI classification and provides instant feedback on communication patterns</p>
+        <div style="margin: 1rem 0;">
+            <strong>3️⃣ Get Real-time Feedback</strong><br>
+            <span style="margin-left: 1.5rem; color: #666;">Our system analyzes your responses using AI classification and provides instant feedback on communication patterns</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
