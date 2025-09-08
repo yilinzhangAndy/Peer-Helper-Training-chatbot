@@ -412,16 +412,18 @@ def main():
     st.markdown('<h1 class="main-header">🎓 Peer Helper Training Chatbot</h1>', unsafe_allow_html=True)
     st.markdown('<div class="cloud-badge">☁️ Cloud Version - Free & Global Access</div>', unsafe_allow_html=True)
     
-    # Cloud info
+    # How it works info
     st.markdown("""
     <div class="cloud-info">
-        <h4>🌐 Cloud Features</h4>
-        <ul>
-            <li><strong>Global Access:</strong> Available worldwide 24/7</li>
-            <li><strong>Free to Use:</strong> No registration required</li>
-            <li><strong>Privacy Protected:</strong> All processing happens securely</li>
-            <li><strong>Academic Research:</strong> Designed for MAE education</li>
-        </ul>
+        <h4>📋 How It Works</h4>
+        <p><strong>1️⃣ Choose Your Training Scenario</strong><br>
+        Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice</p>
+        
+        <p><strong>2️⃣ Start Conversation Training</strong><br>
+        Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles</p>
+        
+        <p><strong>3️⃣ Get Real-time Feedback</strong><br>
+        Our system analyzes your responses using AI classification and provides instant feedback on communication patterns</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -435,18 +437,6 @@ def main():
     
     # Main content area
     if not st.session_state.show_training:
-        # Show landing page
-        st.markdown("""
-        **1️⃣ Choose Your Training Scenario**  
-        Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice
-        
-        **2️⃣ Start Conversation Training**  
-        Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles
-        
-        **3️⃣ Get Real-time Feedback**  
-        Our system analyzes your responses using AI classification and provides instant feedback on communication patterns
-        """)
-        
         # Start Training Button
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
