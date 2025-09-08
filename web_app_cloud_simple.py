@@ -8,7 +8,7 @@ import random
 
 # Page configuration
 st.set_page_config(
-    page_title="MAE Peer Advisor Training System",
+    page_title="Peer Helper Training Chatbot",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -323,7 +323,7 @@ def generate_student_reply(context: str, persona: str, advisor_intent: str) -> s
 
 def main():
     # Header
-    st.markdown('<h1 class="main-header">🎓 MAE Peer Advisor Training System</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🎓 Peer Helper Training Chatbot</h1>', unsafe_allow_html=True)
     st.markdown('<div class="cloud-badge">☁️ Cloud Version - Free & Global Access</div>', unsafe_allow_html=True)
     
     # Cloud info
@@ -343,55 +343,74 @@ def main():
     with st.spinner("Loading AI components..."):
         intent_classifier = SimpleIntentClassifier()
     
-    # Sidebar for persona selection
-    with st.sidebar:
-        st.header("🎭 Student Persona Selection")
-        
-        # Display persona options
-        personas = ["alpha", "beta", "delta", "echo"]
-        persona_descriptions = {
-            "alpha": "Moderately below average self-efficacy and sense of belonging. Positive about seeking help.",
-            "beta": "Very low sense of belonging and self-efficacy. Hesitant to seek help.",
-            "delta": "Moderately above average self-confidence and belonging. Hesitant to seek help.",
-            "echo": "Very high self-confidence and belonging. Positive about seeking help."
-        }
-        
-        selected_persona = st.selectbox(
-            "Choose a student persona:",
-            personas,
-            format_func=lambda x: f"{x.upper()} - {persona_descriptions[x][:50]}..."
-        )
-        
-        # Display selected persona details
-        if selected_persona:
-            persona_info = STUDENT_PERSONAS[selected_persona]
-            st.markdown(f"""
-            <div class="persona-card">
-                <h4>{selected_persona.upper()}</h4>
-                <p><strong>Description:</strong> {persona_info['description']}</p>
-                <p><strong>Traits:</strong> {', '.join(persona_info['traits'])}</p>
-                <p><strong>Help Seeking:</strong> {persona_info['help_seeking_behavior']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Cloud features
-        st.header("☁️ Cloud Features")
+    # Initialize show_training state
+    if "show_training" not in st.session_state:
+        st.session_state.show_training = False
+    
+    # Main content area
+    if not st.session_state.show_training:
+        # Show landing page
         st.markdown("""
-        - ✅ **Global Access**: Available worldwide
-        - ✅ **Free to Use**: No costs or limits
-        - ✅ **Privacy Protected**: Secure processing
-        - ✅ **Academic Research**: MAE education focus
-        - ✅ **Real-time Analysis**: Intent classification
-        - ✅ **Multi-turn Dialogue**: Interactive training
+        **1️⃣ Choose Your Training Scenario**  
+        Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice
+        
+        **2️⃣ Start Conversation Training**  
+        Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles
+        
+        **3️⃣ Get Real-time Feedback**  
+        Our system analyzes your responses using AI classification and provides instant feedback on communication patterns
         """)
         
-        # Session controls
-        st.header("🎮 Session Controls")
-        if st.button("🔄 Start New Conversation"):
-            st.session_state.messages = []
-            st.session_state.student_intents = []
-            st.session_state.advisor_intents = []
-            st.rerun()
+        # Start Training Button
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 Start Training", type="primary", use_container_width=True):
+                st.session_state.show_training = True
+                st.rerun()
+    else:
+        # Show training interface
+        with st.sidebar:
+            st.header("👥 Choose Your Training Scenario")
+            
+            # Display persona options
+            personas = ["alpha", "beta", "delta", "echo"]
+            persona_descriptions = {
+                "alpha": "Moderately below average self-efficacy and sense of belonging. Positive about seeking help.",
+                "beta": "Very low sense of belonging and self-efficacy. Hesitant to seek help.",
+                "delta": "Moderately above average self-confidence and belonging. Hesitant to seek help.",
+                "echo": "Very high self-confidence and belonging. Positive about seeking help."
+            }
+            
+            selected_persona = st.selectbox(
+                "Choose a student persona:",
+                personas,
+                format_func=lambda x: f"{x.upper()} - {persona_descriptions[x][:50]}..."
+            )
+            
+            # Display selected persona details
+            if selected_persona:
+                persona_info = STUDENT_PERSONAS[selected_persona]
+                st.markdown(f"""
+                <div class="persona-card">
+                    <h4>{selected_persona.upper()}</h4>
+                    <p><strong>Description:</strong> {persona_info['description']}</p>
+                    <p><strong>Traits:</strong> {', '.join(persona_info['traits'])}</p>
+                    <p><strong>Help Seeking:</strong> {persona_info['help_seeking_behavior']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Session controls
+            st.header("🎮 Session Controls")
+            if st.button("🔄 Start New Conversation"):
+                st.session_state.messages = []
+                st.session_state.student_intents = []
+                st.session_state.advisor_intents = []
+                st.rerun()
+            
+            if st.button("🏠 Back to Home"):
+                st.session_state.show_training = False
+                st.rerun()
     
     # Initialize session state
     if "messages" not in st.session_state:
@@ -399,11 +418,12 @@ def main():
         st.session_state.student_intents = []
         st.session_state.advisor_intents = []
     
-    # Main chat interface
-    st.header("💬 Training Conversation")
-    
-    # Display conversation history
-    for i, message in enumerate(st.session_state.messages):
+    # Main chat interface (only show in training mode)
+    if st.session_state.show_training:
+        st.header("💬 Training Conversation")
+        
+        # Display conversation history
+        for i, message in enumerate(st.session_state.messages):
         if message["role"] == "student":
             # Student message with intent
             intent_info = st.session_state.student_intents[i] if i < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
@@ -509,9 +529,9 @@ def main():
             else:
                 st.warning("Please enter a response before sending.")
     
-    # Analysis section
-    if st.session_state.messages:
-        st.header("📊 Conversation Analysis")
+        # Analysis section
+        if st.session_state.messages:
+            st.header("📊 Conversation Analysis")
         
         # Calculate statistics
         student_intent_counts = {}
