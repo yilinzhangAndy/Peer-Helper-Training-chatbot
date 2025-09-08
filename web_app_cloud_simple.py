@@ -508,7 +508,7 @@ def main():
                 <div class="chat-message student-message">
                     <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
                     <br><br>
-                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -522,7 +522,7 @@ def main():
                 <div class="chat-message advisor-message">
                     <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
                     <br><br>
-                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -606,7 +606,7 @@ def main():
         
         # Analysis section
         if st.session_state.messages:
-            st.header("📊 Conversation Analysis")
+            st.header("Conversation Analysis")
             
             # Calculate statistics
             student_intent_counts = {}
@@ -640,7 +640,7 @@ def main():
                     st.write("No advisor messages yet.")
             
             # Q→A pair analysis
-            st.subheader("🔄 Question-Answer Pair Analysis")
+            st.subheader("Question-Answer Pair Analysis")
             same_intent_pairs = 0
             different_intent_pairs = 0
             
