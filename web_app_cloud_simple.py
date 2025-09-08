@@ -248,28 +248,36 @@ def generate_student_reply(context: str, persona: str, advisor_intent: str) -> s
     """Generate student reply based on persona and context"""
     persona_info = STUDENT_PERSONAS.get(persona, STUDENT_PERSONAS["alpha"])
     
-    # Simple response generation based on persona and advisor intent
+    # More diverse responses based on persona and advisor intent
     if "feedback" in advisor_intent.lower() or "support" in advisor_intent.lower():
         responses = {
             "alpha": [
                 "Thank you for the encouragement! I really appreciate your support. I'm feeling more confident about this now.",
                 "That's exactly what I needed to hear. I'll definitely take your advice and keep working hard.",
-                "I'm grateful for your help. This makes me feel more optimistic about my engineering journey."
+                "I'm grateful for your help. This makes me feel more optimistic about my engineering journey.",
+                "Your words really mean a lot to me. I was feeling uncertain, but now I feel more motivated.",
+                "I appreciate you believing in me. I'll do my best to follow through on your suggestions."
             ],
             "beta": [
                 "I really appreciate you saying that. It means a lot to me, even though I still feel uncertain.",
                 "Thank you for being so understanding. I'm trying to believe in myself more.",
-                "Your support helps, but I'm still worried about whether I can really succeed in engineering."
+                "Your support helps, but I'm still worried about whether I can really succeed in engineering.",
+                "I'm grateful for your patience with me. I know I can be difficult sometimes.",
+                "Thank you for not giving up on me. I'll try to be more confident in my abilities."
             ],
             "delta": [
                 "Thanks for the feedback! I'll definitely consider what you've said and see how it applies to my situation.",
                 "I appreciate your perspective. Let me think about this and see how I can implement your suggestions.",
-                "That's helpful advice. I'll work on incorporating that into my approach."
+                "That's helpful advice. I'll work on incorporating that into my approach.",
+                "Your input is valuable. I'll analyze this and see how it fits with my current strategy.",
+                "Good point. I'll evaluate this feedback and determine the best way forward."
             ],
             "echo": [
                 "Excellent! That's exactly the kind of guidance I was looking for. I'm excited to put this into practice.",
                 "Perfect! I'm confident this approach will work well for me. Thanks for the great advice!",
-                "That's fantastic! I love learning new strategies. I'm ready to take on this challenge."
+                "That's fantastic! I love learning new strategies. I'm ready to take on this challenge.",
+                "Outstanding! This is exactly what I needed. I'm energized and ready to implement this.",
+                "Brilliant! I'm excited about the possibilities. This is going to be great!"
             ]
         }
     elif "understanding" in advisor_intent.lower() or "clarification" in advisor_intent.lower():
@@ -277,22 +285,92 @@ def generate_student_reply(context: str, persona: str, advisor_intent: str) -> s
             "alpha": [
                 "I'm still a bit confused about some details. Could you help me understand this better?",
                 "I think I understand, but I want to make sure I've got it right. Could you clarify a bit more?",
-                "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?"
+                "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?",
+                "I want to make sure I'm on the right track. Could you walk me through that again?",
+                "I'm getting it, but I'd like to confirm my understanding. What's the key point I should focus on?"
             ],
             "beta": [
                 "I'm not sure I understand completely. I don't want to seem stupid, but could you explain it differently?",
                 "I'm still confused about this. Maybe I'm not cut out for engineering after all.",
-                "I don't want to bother you with more questions, but I'm still struggling to understand."
+                "I don't want to bother you with more questions, but I'm still struggling to understand.",
+                "I'm sorry, but I'm still not getting it. Could you try a different approach?",
+                "I feel like I'm missing something basic. Could you help me figure out what it is?"
             ],
             "delta": [
                 "I see what you mean, but I'd like to make sure I understand correctly. Could you clarify?",
                 "I think I get it, but let me make sure I've got the right approach. Could you confirm?",
-                "I understand the general idea, but I want to make sure I'm implementing it correctly."
+                "I understand the general idea, but I want to make sure I'm implementing it correctly.",
+                "That makes sense, but I want to verify my understanding. What's the most important aspect?",
+                "I'm following your logic, but I'd like to confirm the key principles behind this approach."
             ],
             "echo": [
                 "I think I understand, but let me make sure I've got it right. Could you confirm the key points?",
                 "I'm following along well, but I want to make sure I'm not missing anything important.",
-                "That makes sense! I just want to double-check that I'm approaching this the right way."
+                "That makes sense! I just want to double-check that I'm approaching this the right way.",
+                "I'm getting the concept, but I'd love to understand the deeper principles. Could you elaborate?",
+                "This is fascinating! I want to make sure I understand all the nuances. What else should I know?"
+            ]
+        }
+    elif "exploration" in advisor_intent.lower() or "reflection" in advisor_intent.lower():
+        responses = {
+            "alpha": [
+                "That's an interesting perspective. I hadn't thought about it that way before. What made you consider this approach?",
+                "I'm curious about this. Could you tell me more about how this has worked for other students?",
+                "This is new to me. I'd like to explore this further. What resources would you recommend?",
+                "That's a good question. I'm still figuring out what I want to focus on. What do you think would be most valuable?",
+                "I'm interested in learning more about this. What's the best way for me to get started?"
+            ],
+            "beta": [
+                "I'm not sure I understand all the options. Could you explain what each path would involve?",
+                "I feel overwhelmed by all the choices. What would you recommend for someone who's just starting out?",
+                "I'm worried I might make the wrong decision. How do I know which direction is right for me?",
+                "This is all new to me. I'm not sure where to begin. Could you help me understand the basics?",
+                "I'm feeling lost with all these options. What would be a good starting point for someone like me?"
+            ],
+            "delta": [
+                "That's an interesting approach. I'm considering how this aligns with my long-term goals. What are your thoughts on the strategic implications?",
+                "I appreciate the insight. I'm evaluating how this fits into my overall plan. What would you prioritize in my situation?",
+                "Good point. I'm thinking about the best way to leverage this opportunity. What's your take on the timing?",
+                "This is intriguing. I'm analyzing how this could benefit my career trajectory. What's your experience with this approach?",
+                "That's a solid perspective. I'm considering the implementation strategy. What challenges should I anticipate?"
+            ],
+            "echo": [
+                "That's exciting! I love exploring new possibilities. What other opportunities should I be looking into?",
+                "This is exactly what I was hoping for! I'm energized by the potential. What's the next step I should take?",
+                "Fantastic! I'm ready to dive in and make the most of this. What resources do you recommend I explore?",
+                "This is perfect! I'm excited about all the possibilities. What would be the most ambitious goal I could set?",
+                "Excellent! I'm ready to take this to the next level. What advanced strategies should I consider?"
+            ]
+        }
+    elif "goal" in advisor_intent.lower() or "planning" in advisor_intent.lower():
+        responses = {
+            "alpha": [
+                "I like the idea of having a plan. Could you help me break this down into smaller, manageable steps?",
+                "That sounds like a good approach. What timeline do you think would be realistic for someone at my level?",
+                "I want to make sure I'm setting realistic goals. What would you consider a good starting point for me?",
+                "This planning approach makes sense. How do I know if my goals are appropriate for my current level?",
+                "I appreciate the structured approach. What milestones should I be aiming for?"
+            ],
+            "beta": [
+                "I'm not sure how to set realistic goals. What would be appropriate for someone at my level?",
+                "I feel like my goals might be too ambitious. How do I know what's achievable?",
+                "I'm worried about failing. What's a safe starting point that I can build from?",
+                "I don't want to set myself up for disappointment. What would be a reasonable first goal?",
+                "I'm nervous about committing to goals. How do I know I can actually achieve them?"
+            ],
+            "delta": [
+                "I like the strategic approach. I'm thinking about how to structure this for maximum impact. What's your recommendation?",
+                "That makes sense. I'm planning how to implement this effectively. What timeline would you suggest?",
+                "Good framework. I'm considering the best way to execute this plan. What resources would you recommend?",
+                "This is a solid plan. I'm analyzing the implementation strategy. What's the most critical success factor?",
+                "Excellent approach. I'm considering the long-term implications. What should I prioritize first?"
+            ],
+            "echo": [
+                "Excellent! I'm excited to create an ambitious plan. What would you consider a stretch goal for me?",
+                "That's a great framework! I'm ready to set some challenging targets. What timeline would push me to grow?",
+                "Perfect! I love having clear objectives. What would be the most impactful goals I could set?",
+                "This is fantastic! I'm ready to set some really ambitious targets. What would be the ultimate goal?",
+                "Outstanding! I'm excited about the possibilities. What would be the most challenging objective I could pursue?"
             ]
         }
     else:
@@ -300,22 +378,30 @@ def generate_student_reply(context: str, persona: str, advisor_intent: str) -> s
             "alpha": [
                 "That's interesting. I'd like to learn more about this topic and how it applies to my situation.",
                 "I appreciate you sharing that with me. I'll think about how I can use this information.",
-                "This is helpful. I'm going to consider what you've said and see how it fits with my goals."
+                "This is helpful. I'm going to consider what you've said and see how it fits with my goals.",
+                "That's a good point. I hadn't considered that perspective before. Let me think about this.",
+                "I'm interested in this approach. Could you tell me more about how it works in practice?"
             ],
             "beta": [
                 "I'm not sure about this, but I'm trying to understand better. Maybe I can figure it out.",
                 "I'm still learning about this, but I appreciate you taking the time to explain.",
-                "I'm not confident about this yet, but I'll try to work through it."
+                "I'm not confident about this yet, but I'll try to work through it.",
+                "This is challenging for me, but I want to understand. Could you help me with the basics?",
+                "I'm struggling with this concept, but I'm determined to learn. What should I focus on first?"
             ],
             "delta": [
                 "I see. Let me think about this and see how it applies to my situation and goals.",
                 "That's a good point. I'll consider this approach and see how it fits with my plans.",
-                "I understand. Let me evaluate this and see how I can incorporate it into my strategy."
+                "I understand. Let me evaluate this and see how I can incorporate it into my strategy.",
+                "That's a solid approach. I'm analyzing how this could benefit my overall plan.",
+                "Good insight. I'm considering the implementation details and potential outcomes."
             ],
             "echo": [
                 "That's a great point! I'm excited to explore this further and see how it can help me.",
                 "Excellent! This is exactly the kind of information I was looking for. I'm ready to dive in.",
-                "Perfect! I love learning about new approaches. I'm confident this will be valuable for me."
+                "Perfect! I love learning about new approaches. I'm confident this will be valuable for me.",
+                "This is fantastic! I'm energized by the possibilities. What's the next step?",
+                "Outstanding! I'm ready to implement this right away. This is exactly what I needed!"
             ]
         }
     
