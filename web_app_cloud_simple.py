@@ -424,99 +424,99 @@ def main():
         
         # Display conversation history
         for i, message in enumerate(st.session_state.messages):
-        if message["role"] == "student":
-            # Student message with intent
-            intent_info = st.session_state.student_intents[i] if i < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
-            intent_class = get_intent_badge_class(intent_info["intent"])
-            
-            st.markdown(f"""
-            <div class="chat-message student-message">
-                <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
-                <br><br>
-                🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
-            </div>
-            """, unsafe_allow_html=True)
-            
-        else:
-            # Advisor message with intent
-            advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
-            intent_info = st.session_state.advisor_intents[advisor_idx] if advisor_idx < len(st.session_state.advisor_intents) else {"intent": "Unknown", "confidence": 0.0}
-            intent_class = get_intent_badge_class(intent_info["intent"])
-            
-            st.markdown(f"""
-            <div class="chat-message advisor-message">
-                <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
-                <br><br>
-                🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Generate initial student message if conversation is empty
-    if not st.session_state.messages:
-        if st.button("🎯 Start Conversation"):
-            with st.spinner("Student is thinking..."):
-                opening_questions = STUDENT_PERSONAS[selected_persona]["opening_questions"]
-                opening_question = random.choice(opening_questions)
-                st.session_state.messages.append({
-                    "role": "student",
-                    "content": opening_question,
-                    "timestamp": datetime.now()
-                })
+            if message["role"] == "student":
+                # Student message with intent
+                intent_info = st.session_state.student_intents[i] if i < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
+                intent_class = get_intent_badge_class(intent_info["intent"])
                 
-                # Analyze student intent
-                intent_result = analyze_intent(opening_question, intent_classifier, "student")
-                st.session_state.student_intents.append(intent_result)
+                st.markdown(f"""
+                <div class="chat-message student-message">
+                    <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
+                    <br><br>
+                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                </div>
+                """, unsafe_allow_html=True)
                 
-                st.rerun()
-    
-    # Advisor input
-    if st.session_state.messages:
-        advisor_input = st.text_area(
-            "Your response as peer advisor:",
-            height=100,
-            placeholder="Type your response here..."
-        )
+            else:
+                # Advisor message with intent
+                advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
+                intent_info = st.session_state.advisor_intents[advisor_idx] if advisor_idx < len(st.session_state.advisor_intents) else {"intent": "Unknown", "confidence": 0.0}
+                intent_class = get_intent_badge_class(intent_info["intent"])
+                
+                st.markdown(f"""
+                <div class="chat-message advisor-message">
+                    <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
+                    <br><br>
+                    🎯 {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                </div>
+                """, unsafe_allow_html=True)
         
-        if st.button("📤 Send Response"):
-            if advisor_input.strip():
-                # Add advisor message
-                st.session_state.messages.append({
-                    "role": "advisor",
-                    "content": advisor_input,
-                    "timestamp": datetime.now()
-                })
-                
-                # Analyze advisor intent
-                intent_result = analyze_intent(advisor_input, intent_classifier, "advisor")
-                st.session_state.advisor_intents.append(intent_result)
-                
-                # Generate student response
-                with st.spinner("☁️ Generating student response..."):
-                    try:
-                        # Get recent conversation context
-                        recent_messages = st.session_state.messages[-4:]
-                        context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
-                        
-                        # Generate student reply
-                        student_reply = generate_student_reply(
-                            context=context,
-                            persona=selected_persona,
-                            advisor_intent=intent_result["intent"]
-                        )
-                        
-                        # Add student response
-                        st.session_state.messages.append({
-                            "role": "student",
-                            "content": student_reply,
-                            "timestamp": datetime.now()
-                        })
-                        
-                        # Analyze student intent
-                        student_intent_result = analyze_intent(student_reply, intent_classifier, "student")
-                        st.session_state.student_intents.append(student_intent_result)
-                        
-                    except Exception as e:
-                        st.error(f"Error generating student response: {str(e)}")
+        # Generate initial student message if conversation is empty
+        if not st.session_state.messages:
+            if st.button("🎯 Start Conversation"):
+                with st.spinner("Student is thinking..."):
+                    opening_questions = STUDENT_PERSONAS[selected_persona]["opening_questions"]
+                    opening_question = random.choice(opening_questions)
+                    st.session_state.messages.append({
+                        "role": "student",
+                        "content": opening_question,
+                        "timestamp": datetime.now()
+                    })
+                    
+                    # Analyze student intent
+                    intent_result = analyze_intent(opening_question, intent_classifier, "student")
+                    st.session_state.student_intents.append(intent_result)
+                    
+                    st.rerun()
+        
+        # Advisor input
+        if st.session_state.messages:
+            advisor_input = st.text_area(
+                "Your response as peer advisor:",
+                height=100,
+                placeholder="Type your response here..."
+            )
+            
+            if st.button("📤 Send Response"):
+                if advisor_input.strip():
+                    # Add advisor message
+                    st.session_state.messages.append({
+                        "role": "advisor",
+                        "content": advisor_input,
+                        "timestamp": datetime.now()
+                    })
+                    
+                    # Analyze advisor intent
+                    intent_result = analyze_intent(advisor_input, intent_classifier, "advisor")
+                    st.session_state.advisor_intents.append(intent_result)
+                    
+                    # Generate student response
+                    with st.spinner("☁️ Generating student response..."):
+                        try:
+                            # Get recent conversation context
+                            recent_messages = st.session_state.messages[-4:]
+                            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
+                            
+                            # Generate student reply
+                            student_reply = generate_student_reply(
+                                context=context,
+                                persona=selected_persona,
+                                advisor_intent=intent_result["intent"]
+                            )
+                            
+                            # Add student response
+                            st.session_state.messages.append({
+                                "role": "student",
+                                "content": student_reply,
+                                "timestamp": datetime.now()
+                            })
+                            
+                            # Analyze student intent
+                            student_intent_result = analyze_intent(student_reply, intent_classifier, "student")
+                            st.session_state.student_intents.append(student_intent_result)
+                            
+                        except Exception as e:
+                            st.error(f"Error generating student response: {str(e)}")
                         # Add a fallback response
                         st.session_state.messages.append({
                             "role": "student",
@@ -524,71 +524,71 @@ def main():
                             "timestamp": datetime.now()
                         })
                         st.session_state.student_intents.append({"intent": "Understanding and Clarification", "confidence": 0.5})
-                
-                st.rerun()
-            else:
-                st.warning("Please enter a response before sending.")
-    
+                    
+                    st.rerun()
+                else:
+                    st.warning("Please enter a response before sending.")
+        
         # Analysis section
         if st.session_state.messages:
             st.header("📊 Conversation Analysis")
-        
-        # Calculate statistics
-        student_intent_counts = {}
-        advisor_intent_counts = {}
-        
-        for intent_info in st.session_state.student_intents:
-            intent = intent_info["intent"]
-            student_intent_counts[intent] = student_intent_counts.get(intent, 0) + 1
-        
-        for intent_info in st.session_state.advisor_intents:
-            intent = intent_info["intent"]
-            advisor_intent_counts[intent] = advisor_intent_counts.get(intent, 0) + 1
-        
-        # Display statistics
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("👨‍🎓 Student Intent Distribution")
-            if student_intent_counts:
-                for intent, count in student_intent_counts.items():
-                    st.write(f"• **{intent}**: {count} times")
-            else:
-                st.write("No student messages yet.")
-        
-        with col2:
-            st.subheader("👨‍🏫 Advisor Intent Distribution")
-            if advisor_intent_counts:
-                for intent, count in advisor_intent_counts.items():
-                    st.write(f"• **{intent}**: {count} times")
-            else:
-                st.write("No advisor messages yet.")
-        
-        # Q→A pair analysis
-        st.subheader("🔄 Question-Answer Pair Analysis")
-        same_intent_pairs = 0
-        different_intent_pairs = 0
-        
-        for i in range(1, len(st.session_state.messages)):
-            if (st.session_state.messages[i-1]["role"] == "student" and 
-                st.session_state.messages[i]["role"] == "advisor"):
-                
-                student_idx = len([m for m in st.session_state.messages[:i] if m["role"] == "student"]) - 1
-                advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
-                
-                if (student_idx < len(st.session_state.student_intents) and 
-                    advisor_idx < len(st.session_state.advisor_intents)):
+            
+            # Calculate statistics
+            student_intent_counts = {}
+            advisor_intent_counts = {}
+            
+            for intent_info in st.session_state.student_intents:
+                intent = intent_info["intent"]
+                student_intent_counts[intent] = student_intent_counts.get(intent, 0) + 1
+            
+            for intent_info in st.session_state.advisor_intents:
+                intent = intent_info["intent"]
+                advisor_intent_counts[intent] = advisor_intent_counts.get(intent, 0) + 1
+            
+            # Display statistics
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("👨‍🎓 Student Intent Distribution")
+                if student_intent_counts:
+                    for intent, count in student_intent_counts.items():
+                        st.write(f"• **{intent}**: {count} times")
+                else:
+                    st.write("No student messages yet.")
+            
+            with col2:
+                st.subheader("👨‍🏫 Advisor Intent Distribution")
+                if advisor_intent_counts:
+                    for intent, count in advisor_intent_counts.items():
+                        st.write(f"• **{intent}**: {count} times")
+                else:
+                    st.write("No advisor messages yet.")
+            
+            # Q→A pair analysis
+            st.subheader("🔄 Question-Answer Pair Analysis")
+            same_intent_pairs = 0
+            different_intent_pairs = 0
+            
+            for i in range(1, len(st.session_state.messages)):
+                if (st.session_state.messages[i-1]["role"] == "student" and 
+                    st.session_state.messages[i]["role"] == "advisor"):
                     
-                    student_intent = st.session_state.student_intents[student_idx]["intent"]
-                    advisor_intent = st.session_state.advisor_intents[advisor_idx]["intent"]
+                    student_idx = len([m for m in st.session_state.messages[:i] if m["role"] == "student"]) - 1
+                    advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
                     
-                    if student_intent == advisor_intent:
-                        same_intent_pairs += 1
-                    else:
-                        different_intent_pairs += 1
-        
-        st.write(f"• **Same intent pairs**: {same_intent_pairs}")
-        st.write(f"• **Different intent pairs**: {different_intent_pairs}")
+                    if (student_idx < len(st.session_state.student_intents) and 
+                        advisor_idx < len(st.session_state.advisor_intents)):
+                        
+                        student_intent = st.session_state.student_intents[student_idx]["intent"]
+                        advisor_intent = st.session_state.advisor_intents[advisor_idx]["intent"]
+                        
+                        if student_intent == advisor_intent:
+                            same_intent_pairs += 1
+                        else:
+                            different_intent_pairs += 1
+            
+            st.write(f"• **Same intent pairs**: {same_intent_pairs}")
+            st.write(f"• **Different intent pairs**: {different_intent_pairs}")
 
 if __name__ == "__main__":
     main()
