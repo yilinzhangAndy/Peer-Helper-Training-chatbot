@@ -414,15 +414,15 @@ def main():
     
     # How it works info - use st.info for better compatibility
     st.info("""
-    **📋 How It Works**
+    **How It Works**
     
-    **1️⃣ Choose Your Training Scenario**  
+    **Choose Your Training Scenario**  
     Select a student persona (Alpha, Beta, Delta, or Echo) based on the mentoring skills you want to practice
     
-    **2️⃣ Start Conversation Training**  
+    **Start Conversation Training**  
     Engage in realistic dialogue with AI-powered student personas that respond based on authentic psychological profiles
     
-    **3️⃣ Get Real-time Feedback**  
+    **Get Real-time Feedback**  
     Our system analyzes your responses using AI classification and provides instant feedback on communication patterns
     """)
     
