@@ -181,42 +181,67 @@ How would you respond as a {persona} student?<|eot_id|><|start_header_id|>assist
         return generate_student_reply_fallback(advisor_message, persona)
 
 def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
-    """Fallback rule-based student reply generation"""
+    """Fallback rule-based student reply generation with more variety"""
     try:
-        # Enhanced responses with more variety
+        # Enhanced responses with more variety and context awareness
         responses = {
             "alpha": [
                 "That sounds like a good plan! I'm excited to work on this. Could you help me break this down into smaller steps?",
                 "I really appreciate your guidance. I want to make sure I'm on the right track - what should I focus on first?",
                 "This is exactly what I needed to hear! I'm feeling more confident about my direction now. How do I get started?",
                 "Thank you for the clear direction! I'm ready to take action. What would be the best way to begin?",
-                "I love how structured this approach is! I'm motivated to start working on these goals. Can you help me prioritize?"
+                "I love how structured this approach is! I'm motivated to start working on these goals. Can you help me prioritize?",
+                "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?",
+                "This is really helpful! I'm starting to see the connections. What would be the next step in this process?",
+                "I appreciate you breaking this down for me. I think I understand, but could you give me an example?",
+                "This makes a lot of sense now! I'm feeling more confident about tackling this problem. How should I approach it?",
+                "Thank you for the clear explanation! I'm ready to try this approach. What should I do if I run into issues?"
             ],
             "beta": [
                 "I'm not sure if I'm ready for this level of planning. I feel like I might be getting ahead of myself. What do you think?",
                 "This sounds overwhelming to me. I'm worried I might not be able to follow through. Could we start smaller?",
                 "I appreciate the guidance, but I'm feeling uncertain about my ability to achieve these goals. Is this realistic for me?",
                 "I want to try, but I'm afraid I might fail. Do you think someone like me can really do this?",
-                "This seems like a lot to take on. I'm not sure I have the confidence to pursue such ambitious goals. What would you suggest?"
+                "This seems like a lot to take on. I'm not sure I have the confidence to pursue such ambitious goals. What would you suggest?",
+                "I'm trying to understand, but I feel like I'm missing something. Could you explain it in simpler terms?",
+                "I'm sorry, but I'm still confused. I don't want to waste your time, but could you help me understand better?",
+                "I feel like I should understand this, but I'm struggling. Am I overthinking this?",
+                "I'm worried I'm not smart enough to figure this out. Could you break it down even more?",
+                "I don't want to seem stupid, but I'm having trouble following. Could you help me step by step?"
             ],
             "delta": [
                 "This is a solid approach. I can see the strategic value in this plan. What are the potential risks I should consider?",
                 "I appreciate the structured approach. I want to make sure I'm considering all angles. What contingencies should I plan for?",
                 "This makes sense from a planning perspective. I'm thinking about the long-term implications. How does this align with my overall strategy?",
                 "I like the systematic nature of this plan. I want to ensure I'm not missing any important factors. What should I prioritize?",
-                "This is a well-thought-out approach. I'm considering the practical implementation. What resources will I need to succeed?"
+                "This is a well-thought-out approach. I'm considering the practical implementation. What resources will I need to succeed?",
+                "I can see the logic in this approach. Let me think through the implications. What are the potential outcomes of this solution?",
+                "This is an interesting problem-solving strategy. I'm analyzing the different components. How do these elements work together?",
+                "I appreciate the analytical approach. I'm considering the cause-and-effect relationships. What factors should I monitor?",
+                "This solution makes sense logically. I'm thinking about the broader context. How does this fit into the bigger picture?",
+                "I can follow the reasoning here. I want to understand the underlying principles. What are the key assumptions in this approach?"
             ],
             "echo": [
                 "This is exactly what I was looking for! I'm excited to dive into this plan. What's the first step I should take?",
                 "Perfect! I love how ambitious and well-structured this approach is. I'm ready to tackle this challenge. How can I get started immediately?",
                 "This is fantastic guidance! I'm feeling energized and motivated. What resources do I need to make this happen?",
                 "Excellent! I'm confident I can achieve these goals. I want to make sure I'm maximizing my potential. What's the best way to proceed?",
-                "This is exactly the kind of challenge I thrive on! I'm ready to take this to the next level. How can I exceed expectations?"
+                "This is exactly the kind of challenge I thrive on! I'm ready to take this to the next level. How can I exceed expectations?",
+                "This is a brilliant approach! I can see how this will solve the problem effectively. What's the implementation timeline?",
+                "Excellent problem-solving strategy! I'm excited to apply this methodology. How can I adapt this to other challenges?",
+                "This is exactly the kind of analytical thinking I enjoy! I'm ready to implement this solution. What are the next steps?",
+                "Perfect! I love how systematic and thorough this approach is. I'm confident this will work. How can I optimize the process?",
+                "This is outstanding! I'm impressed by the depth of analysis. I want to master this approach. What advanced techniques should I learn?"
             ]
         }
         
         # Get responses for the specific persona
         persona_responses = responses.get(persona, responses["alpha"])
+        
+        # Add some randomness to avoid exact repetition
+        import time
+        random.seed(int(time.time() * 1000) % 10000)
+        
         return random.choice(persona_responses)
         
     except Exception as e:
