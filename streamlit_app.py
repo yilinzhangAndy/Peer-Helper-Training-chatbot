@@ -342,17 +342,25 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         # Try HF API first
         try:
             hf_result = hf_classify_via_api(text)
-            if isinstance(hf_result.get("intent"), str):
-                return {"intent": hf_result.get("intent", "Unknown"),
-                        "confidence": hf_result.get("confidence", 0.0)}
-        except Exception:
-            pass  # Fallback to simple classifier if HF API fails
+            if isinstance(hf_result.get("intent"), str) and hf_result.get("intent") != "Unknown":
+                return {"intent": hf_result.get("intent", "Understanding and Clarification"),
+                        "confidence": hf_result.get("confidence", 0.5)}
+        except Exception as e:
+            st.warning(f"HF API failed: {str(e)}. Using local classifier.")
         
         # Fallback to simple classifier
         result = intent_classifier.classify(text)
-        return {"intent": result.get("intent", "Unknown"),
-                "confidence": result.get("confidence", 0.0)}
-    except Exception:
+        intent = result.get("intent", "Understanding and Clarification")
+        confidence = result.get("confidence", 0.5)
+        
+        # Ensure we never return "Unknown"
+        if intent == "Unknown" or not intent:
+            intent = "Understanding and Clarification"
+            confidence = 0.5
+            
+        return {"intent": intent, "confidence": confidence}
+    except Exception as e:
+        st.warning(f"Intent analysis failed: {str(e)}. Using default.")
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
 def hf_classify_via_api(text: str) -> Dict[str, Any]:
@@ -601,14 +609,40 @@ class SimpleIntentClassifier:
         # Select the category with the highest score
         max_score = max(scores.values())
         if max_score == 0:
-            intent = "Understanding and Clarification"
-            confidence = 0.5
+            # If no keywords match, use context-based classification
+            intent = self._context_based_classification(text_lower)
+            confidence = 0.6
         else:
             intent = max(scores, key=scores.get)
             # Calculate confidence based on score strength
             confidence = min(0.95, 0.5 + (max_score * 0.05))
         
         return {"intent": intent, "confidence": confidence}
+    
+    def _context_based_classification(self, text_lower):
+        """Context-based classification when no keywords match"""
+        # Question patterns
+        if any(word in text_lower for word in ['what', 'how', 'why', 'when', 'where', 'which', 'who']):
+            return "Understanding and Clarification"
+        
+        # Emotional expressions
+        if any(word in text_lower for word in ['feel', 'worried', 'confused', 'stressed', 'anxious', 'scared']):
+            return "Feedback and Support"
+        
+        # Future-oriented
+        if any(word in text_lower for word in ['future', 'next', 'plan', 'goal', 'want', 'hope']):
+            return "Goal Setting and Planning"
+        
+        # Problem-solving
+        if any(word in text_lower for word in ['problem', 'issue', 'trouble', 'difficult', 'challenge']):
+            return "Problem Solving and Critical Thinking"
+        
+        # Self-reflection
+        if any(word in text_lower for word in ['think', 'consider', 'wonder', 'curious', 'explore']):
+            return "Exploration and Reflection"
+        
+        # Default to clarification
+        return "Understanding and Clarification"
 
 def get_intent_badge_class(intent: str) -> str:
     """Get CSS class for intent badge"""
