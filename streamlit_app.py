@@ -181,68 +181,157 @@ How would you respond as a {persona} student?<|eot_id|><|start_header_id|>assist
         return generate_student_reply_fallback(advisor_message, persona)
 
 def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
-    """Fallback rule-based student reply generation with more variety"""
+    """Semantic-aware fallback reply generation based on advisor message content"""
     try:
-        # Enhanced responses with more variety and context awareness
+        # Enhanced responses organized by semantic categories
         responses = {
-            "alpha": [
-                "That sounds like a good plan! I'm excited to work on this. Could you help me break this down into smaller steps?",
-                "I really appreciate your guidance. I want to make sure I'm on the right track - what should I focus on first?",
-                "This is exactly what I needed to hear! I'm feeling more confident about my direction now. How do I get started?",
-                "Thank you for the clear direction! I'm ready to take action. What would be the best way to begin?",
-                "I love how structured this approach is! I'm motivated to start working on these goals. Can you help me prioritize?",
-                "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?",
-                "This is really helpful! I'm starting to see the connections. What would be the next step in this process?",
-                "I appreciate you breaking this down for me. I think I understand, but could you give me an example?",
-                "This makes a lot of sense now! I'm feeling more confident about tackling this problem. How should I approach it?",
-                "Thank you for the clear explanation! I'm ready to try this approach. What should I do if I run into issues?"
-            ],
-            "beta": [
-                "I'm not sure if I'm ready for this level of planning. I feel like I might be getting ahead of myself. What do you think?",
-                "This sounds overwhelming to me. I'm worried I might not be able to follow through. Could we start smaller?",
-                "I appreciate the guidance, but I'm feeling uncertain about my ability to achieve these goals. Is this realistic for me?",
-                "I want to try, but I'm afraid I might fail. Do you think someone like me can really do this?",
-                "This seems like a lot to take on. I'm not sure I have the confidence to pursue such ambitious goals. What would you suggest?",
-                "I'm trying to understand, but I feel like I'm missing something. Could you explain it in simpler terms?",
-                "I'm sorry, but I'm still confused. I don't want to waste your time, but could you help me understand better?",
-                "I feel like I should understand this, but I'm struggling. Am I overthinking this?",
-                "I'm worried I'm not smart enough to figure this out. Could you break it down even more?",
-                "I don't want to seem stupid, but I'm having trouble following. Could you help me step by step?"
-            ],
-            "delta": [
-                "This is a solid approach. I can see the strategic value in this plan. What are the potential risks I should consider?",
-                "I appreciate the structured approach. I want to make sure I'm considering all angles. What contingencies should I plan for?",
-                "This makes sense from a planning perspective. I'm thinking about the long-term implications. How does this align with my overall strategy?",
-                "I like the systematic nature of this plan. I want to ensure I'm not missing any important factors. What should I prioritize?",
-                "This is a well-thought-out approach. I'm considering the practical implementation. What resources will I need to succeed?",
-                "I can see the logic in this approach. Let me think through the implications. What are the potential outcomes of this solution?",
-                "This is an interesting problem-solving strategy. I'm analyzing the different components. How do these elements work together?",
-                "I appreciate the analytical approach. I'm considering the cause-and-effect relationships. What factors should I monitor?",
-                "This solution makes sense logically. I'm thinking about the broader context. How does this fit into the bigger picture?",
-                "I can follow the reasoning here. I want to understand the underlying principles. What are the key assumptions in this approach?"
-            ],
-            "echo": [
-                "This is exactly what I was looking for! I'm excited to dive into this plan. What's the first step I should take?",
-                "Perfect! I love how ambitious and well-structured this approach is. I'm ready to tackle this challenge. How can I get started immediately?",
-                "This is fantastic guidance! I'm feeling energized and motivated. What resources do I need to make this happen?",
-                "Excellent! I'm confident I can achieve these goals. I want to make sure I'm maximizing my potential. What's the best way to proceed?",
-                "This is exactly the kind of challenge I thrive on! I'm ready to take this to the next level. How can I exceed expectations?",
-                "This is a brilliant approach! I can see how this will solve the problem effectively. What's the implementation timeline?",
-                "Excellent problem-solving strategy! I'm excited to apply this methodology. How can I adapt this to other challenges?",
-                "This is exactly the kind of analytical thinking I enjoy! I'm ready to implement this solution. What are the next steps?",
-                "Perfect! I love how systematic and thorough this approach is. I'm confident this will work. How can I optimize the process?",
-                "This is outstanding! I'm impressed by the depth of analysis. I want to master this approach. What advanced techniques should I learn?"
-            ]
+            "alpha": {
+                "encouragement": [
+                    "Thank you for the encouragement! I really appreciate your support. I'm feeling more confident about this now.",
+                    "That means a lot to me! I was feeling uncertain, but your words really help. How can I build on this progress?",
+                    "I'm so grateful for your positive feedback! It's exactly what I needed to hear. What should I focus on next?",
+                    "Your support means everything to me! I'm feeling motivated to keep going. Can you help me stay on track?",
+                    "Thank you for believing in me! I'm ready to take on this challenge. What's the best way to move forward?"
+                ],
+                "clarification": [
+                    "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?",
+                    "This is really helpful! I'm starting to see the connections. What would be the next step in this process?",
+                    "I appreciate you breaking this down for me. I think I understand, but could you give me an example?",
+                    "This makes a lot of sense now! I'm feeling more confident about tackling this problem. How should I approach it?",
+                    "Thank you for the clear explanation! I'm ready to try this approach. What should I do if I run into issues?"
+                ],
+                "planning": [
+                    "That sounds like a good plan! I'm excited to work on this. Could you help me break this down into smaller steps?",
+                    "I really appreciate your guidance. I want to make sure I'm on the right track - what should I focus on first?",
+                    "This is exactly what I needed to hear! I'm feeling more confident about my direction now. How do I get started?",
+                    "Thank you for the clear direction! I'm ready to take action. What would be the best way to begin?",
+                    "I love how structured this approach is! I'm motivated to start working on these goals. Can you help me prioritize?"
+                ],
+                "exploration": [
+                    "This is really making me think about my future. I'm curious about exploring more options. What else should I consider?",
+                    "I'm starting to see things differently now. This is giving me a lot to reflect on. How can I explore this further?",
+                    "This conversation is really opening my eyes! I want to learn more about these possibilities. Where should I start?",
+                    "I'm feeling inspired to explore new directions! This is exactly the kind of guidance I needed. What's the next step?",
+                    "Thank you for helping me see new possibilities! I'm excited to explore these ideas. How can I get started?"
+                ]
+            },
+            "beta": {
+                "encouragement": [
+                    "Thank you for being so patient with me. I really appreciate your encouragement, even though I'm struggling.",
+                    "I'm grateful for your support, but I'm worried I might disappoint you. I want to do well, but I'm not sure I can.",
+                    "Your words mean a lot to me, but I'm still feeling uncertain about my abilities. How can I build more confidence?",
+                    "I appreciate you believing in me, but I'm afraid I might not live up to your expectations. What if I fail?",
+                    "Thank you for the encouragement! I'm trying to stay positive, but I'm still worried about making mistakes."
+                ],
+                "clarification": [
+                    "I'm trying to understand, but I feel like I'm missing something. Could you explain it in simpler terms?",
+                    "I'm sorry, but I'm still confused. I don't want to waste your time, but could you help me understand better?",
+                    "I feel like I should understand this, but I'm struggling. Am I overthinking this?",
+                    "I'm worried I'm not smart enough to figure this out. Could you break it down even more?",
+                    "I don't want to seem stupid, but I'm having trouble following. Could you help me step by step?"
+                ],
+                "planning": [
+                    "I'm not sure if I'm ready for this level of planning. I feel like I might be getting ahead of myself. What do you think?",
+                    "This sounds overwhelming to me. I'm worried I might not be able to follow through. Could we start smaller?",
+                    "I appreciate the guidance, but I'm feeling uncertain about my ability to achieve these goals. Is this realistic for me?",
+                    "I want to try, but I'm afraid I might fail. Do you think someone like me can really do this?",
+                    "This seems like a lot to take on. I'm not sure I have the confidence to pursue such ambitious goals. What would you suggest?"
+                ],
+                "exploration": [
+                    "I'm interested in learning more, but I'm worried I might not be good enough. What if I'm not cut out for this?",
+                    "This sounds interesting, but I'm not sure if I have what it takes. Could you help me understand if this is right for me?",
+                    "I want to explore this, but I'm afraid of making the wrong choice. How can I be sure this is the right path?",
+                    "I'm curious about this direction, but I'm worried about my ability to succeed. What would you recommend?",
+                    "This is giving me a lot to think about, but I'm feeling overwhelmed by all the options. How do I choose?"
+                ]
+            },
+            "delta": {
+                "encouragement": [
+                    "I appreciate the constructive feedback. I'm analyzing how this applies to my situation. What specific areas should I focus on improving?",
+                    "Thank you for the detailed input. I'm considering the practical applications. How can I implement these suggestions effectively?",
+                    "This is valuable guidance. I'm thinking about the strategic implications. What are the long-term benefits of this approach?",
+                    "I appreciate your expertise. I'm evaluating how this fits with my goals. What should I prioritize in my development?",
+                    "Thank you for the insights. I'm considering the broader impact. How does this align with my overall strategy?"
+                ],
+                "clarification": [
+                    "I can see the logic in this approach. Let me think through the implications. What are the potential outcomes of this solution?",
+                    "This is an interesting problem-solving strategy. I'm analyzing the different components. How do these elements work together?",
+                    "I appreciate the analytical approach. I'm considering the cause-and-effect relationships. What factors should I monitor?",
+                    "This solution makes sense logically. I'm thinking about the broader context. How does this fit into the bigger picture?",
+                    "I can follow the reasoning here. I want to understand the underlying principles. What are the key assumptions in this approach?"
+                ],
+                "planning": [
+                    "This is a solid approach. I can see the strategic value in this plan. What are the potential risks I should consider?",
+                    "I appreciate the structured approach. I want to make sure I'm considering all angles. What contingencies should I plan for?",
+                    "This makes sense from a planning perspective. I'm thinking about the long-term implications. How does this align with my overall strategy?",
+                    "I like the systematic nature of this plan. I want to ensure I'm not missing any important factors. What should I prioritize?",
+                    "This is a well-thought-out approach. I'm considering the practical implementation. What resources will I need to succeed?"
+                ],
+                "exploration": [
+                    "This is an interesting perspective. I'm analyzing the potential implications. What are the key factors I should consider?",
+                    "I appreciate the different viewpoint. I'm thinking about how this applies to my situation. What are the pros and cons?",
+                    "This gives me a lot to consider. I'm evaluating the strategic value. How does this fit with my long-term goals?",
+                    "I'm interested in exploring this further. I want to understand the full scope. What are the key considerations?",
+                    "This is thought-provoking. I'm analyzing the potential outcomes. What should I be aware of as I explore this option?"
+                ]
+            },
+            "echo": {
+                "encouragement": [
+                    "Thank you for the amazing feedback! I'm feeling even more motivated now. How can I build on this momentum?",
+                    "This is exactly the encouragement I needed! I'm ready to push myself even further. What's the next challenge?",
+                    "I appreciate your confidence in me! I'm excited to prove that your faith is well-placed. How can I exceed expectations?",
+                    "Your support means everything to me! I'm feeling unstoppable. What ambitious goals should I set next?",
+                    "This is fantastic! I'm ready to take on even bigger challenges. How can I make the most of this opportunity?"
+                ],
+                "clarification": [
+                    "This is a brilliant approach! I can see how this will solve the problem effectively. What's the implementation timeline?",
+                    "Excellent problem-solving strategy! I'm excited to apply this methodology. How can I adapt this to other challenges?",
+                    "This is exactly the kind of analytical thinking I enjoy! I'm ready to implement this solution. What are the next steps?",
+                    "Perfect! I love how systematic and thorough this approach is. I'm confident this will work. How can I optimize the process?",
+                    "This is outstanding! I'm impressed by the depth of analysis. I want to master this approach. What advanced techniques should I learn?"
+                ],
+                "planning": [
+                    "This is exactly what I was looking for! I'm excited to dive into this plan. What's the first step I should take?",
+                    "Perfect! I love how ambitious and well-structured this approach is. I'm ready to tackle this challenge. How can I get started immediately?",
+                    "This is fantastic guidance! I'm feeling energized and motivated. What resources do I need to make this happen?",
+                    "Excellent! I'm confident I can achieve these goals. I want to make sure I'm maximizing my potential. What's the best way to proceed?",
+                    "This is exactly the kind of challenge I thrive on! I'm ready to take this to the next level. How can I exceed expectations?"
+                ],
+                "exploration": [
+                    "This is fascinating! I'm excited to explore all these possibilities. What's the most exciting opportunity I should pursue?",
+                    "I love how this opens up new horizons! I'm ready to dive deep into these areas. Where should I start my exploration?",
+                    "This is exactly the kind of growth opportunity I was seeking! I'm energized to explore these new directions. What's the best approach?",
+                    "Perfect! I'm thrilled about these possibilities. I want to make the most of every opportunity. How can I maximize my learning?",
+                    "This is incredible! I'm ready to embrace all these new challenges. What's the most ambitious path I should consider?"
+                ]
+            }
         }
         
-        # Get responses for the specific persona
+        # Semantic analysis of advisor message
+        advisor_lower = advisor_message.lower()
+        
+        # Determine response category based on advisor message content
+        if any(word in advisor_lower for word in ['good', 'great', 'excellent', 'well done', 'proud', 'confident', 'believe', 'support', 'encourage']):
+            category = "encouragement"
+        elif any(word in advisor_lower for word in ['explain', 'clarify', 'understand', 'mean', 'what', 'how', 'why', 'example', 'detail']):
+            category = "clarification"
+        elif any(word in advisor_lower for word in ['plan', 'goal', 'strategy', 'approach', 'step', 'next', 'future', 'timeline', 'schedule']):
+            category = "planning"
+        elif any(word in advisor_lower for word in ['explore', 'consider', 'think about', 'option', 'possibility', 'interest', 'curious', 'discover']):
+            category = "exploration"
+        else:
+            # Default to clarification if no clear category
+            category = "clarification"
+        
+        # Get responses for the specific persona and category
         persona_responses = responses.get(persona, responses["alpha"])
+        category_responses = persona_responses.get(category, persona_responses["clarification"])
         
         # Add some randomness to avoid exact repetition
         import time
         random.seed(int(time.time() * 1000) % 10000)
         
-        return random.choice(persona_responses)
+        return random.choice(category_responses)
         
     except Exception as e:
         return "I'm not sure how to respond to that. Could you help me understand better?"
