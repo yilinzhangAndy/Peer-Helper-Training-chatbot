@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 import json
 from datetime import datetime
 import random
+import requests
 
 # Page configuration
 st.set_page_config(
@@ -98,48 +99,275 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Simple intent classifier for cloud deployment
+# Enhanced intent classifier for cloud deployment
 class SimpleIntentClassifier:
     def __init__(self):
+        # Comprehensive keyword lists for each category
         self.intent_keywords = {
-            "Exploration and Reflection": [
-                "explore", "think", "consider", "wonder", "curious", "interest", 
-                "research", "direction", "future", "career", "path"
-            ],
-            "Feedback and Support": [
-                "help", "support", "encourage", "thank", "appreciate", "good", 
-                "great", "excellent", "wonderful", "amazing"
-            ],
             "Goal Setting and Planning": [
-                "goal", "plan", "planning", "schedule", "timeline", "deadline", 
-                "objective", "target", "aim", "strategy"
+                # Academic planning
+                'goal', 'goals', 'objective', 'objectives', 'target', 'targets', 'aim', 'aims',
+                'plan', 'planning', 'schedule', 'timeline', 'roadmap', 'pathway', 'strategy',
+                'course', 'courses', 'curriculum', 'semester', 'year', 'graduation', 'graduate',
+                'degree', 'major', 'minor', 'specialization', 'concentration', 'track',
+                'prerequisite', 'prerequisites', 'requirement', 'requirements', 'credit', 'credits',
+                
+                # Career planning
+                'career', 'profession', 'job', 'internship', 'co-op', 'employment', 'work',
+                'industry', 'company', 'organization', 'position', 'role', 'opportunity',
+                'resume', 'cv', 'portfolio', 'application', 'interview', 'networking',
+                'skill', 'skills', 'competency', 'competencies', 'qualification', 'certification',
+                
+                # Time management & structure
+                'deadline', 'due date', 'priority', 'priorities', 'organize', 'structure',
+                'milestone', 'milestones', 'step', 'steps', 'phase', 'stages', 'progress',
+                'achieve', 'accomplish', 'attain', 'reach', 'complete', 'finish',
+                
+                # Future orientation
+                'future', 'next', 'upcoming', 'long-term', 'short-term', 'eventually',
+                'aspire', 'aspiration', 'vision', 'dream', 'hope', 'intention', 'want to',
+                'going to', 'will', 'shall', 'expect', 'anticipate'
+            ],
+            
+            "Problem Solving and Critical Thinking": [
+                # Problem identification
+                'problem', 'problems', 'issue', 'issues', 'challenge', 'challenges', 'difficulty',
+                'difficulties', 'obstacle', 'obstacles', 'barrier', 'barriers', 'trouble',
+                'struggle', 'conflict', 'dilemma', 'concern', 'worry', 'question',
+                
+                # Analysis & thinking
+                'analysis', 'analyze', 'analytical', 'examine', 'evaluate', 'assessment',
+                'consider', 'think', 'thinking', 'reason', 'reasoning', 'logic', 'logical',
+                'critical', 'systematic', 'methodical', 'approach', 'method', 'methodology',
+                'process', 'procedure', 'technique', 'framework', 'model',
+                
+                # Solution development
+                'solution', 'solutions', 'solve', 'resolve', 'fix', 'address', 'handle',
+                'deal with', 'tackle', 'approach', 'strategy', 'strategies', 'plan',
+                'alternative', 'alternatives', 'option', 'options', 'choice', 'choices',
+                'decision', 'decide', 'determine', 'figure out', 'work out',
+                
+                # Engineering specific
+                'design', 'algorithm', 'calculation', 'formula', 'equation', 'code', 'coding',
+                'debug', 'troubleshoot', 'optimize', 'efficiency', 'performance',
+                'test', 'testing', 'experiment', 'simulation', 'model', 'prototype',
+                
+                # Cognitive processes
+                'brainstorm', 'creativity', 'innovative', 'research', 'investigation',
+                'hypothesis', 'theory', 'concept', 'principle', 'assumption',
+                'compare', 'contrast', 'synthesize', 'integrate', 'pattern', 'trend'
+            ],
+            
+            "Understanding and Clarification": [
+                # Seeking understanding
+                'understand', 'understanding', 'comprehend', 'grasp', 'get it', 'see',
+                'realize', 'recognize', 'know', 'learn', 'figure out', 'make sense',
+                'clear', 'unclear', 'confused', 'confusing', 'puzzled', 'lost',
+                
+                # Requesting explanation
+                'explain', 'explanation', 'clarify', 'clarification', 'define', 'definition',
+                'describe', 'description', 'elaborate', 'detail', 'specify', 'illustrate',
+                'example', 'examples', 'instance', 'demonstrate', 'show', 'tell',
+                'what', 'how', 'why', 'when', 'where', 'which', 'who',
+                
+                # Information seeking
+                'question', 'questions', 'ask', 'asking', 'wonder', 'wondering',
+                'curious', 'unsure', 'uncertain', 'doubt', 'confirm', 'verification',
+                'check', 'verify', 'validate', 'ensure', 'make sure',
+                'information', 'detail', 'details', 'fact', 'facts', 'data',
+                
+                # Learning process
+                'study', 'studying', 'read', 'reading', 'review', 'revise', 'practice',
+                'exercise', 'homework', 'assignment', 'material', 'content', 'topic',
+                'subject', 'concept', 'theory', 'principle', 'rule', 'guideline',
+                
+                # Communication
+                'mean', 'meaning', 'interpret', 'interpretation', 'translate',
+                'paraphrase', 'rephrase', 'repeat', 'summarize', 'summary',
+                'context', 'background', 'basis', 'foundation', 'fundamental'
+            ],
+            
+            "Feedback and Support": [
+                # Positive feedback
+                'good', 'great', 'excellent', 'outstanding', 'impressive', 'wonderful',
+                'amazing', 'fantastic', 'brilliant', 'perfect', 'right', 'correct',
+                'well done', 'nice job', 'keep up', 'proud', 'congratulations',
+                'success', 'successful', 'achievement', 'accomplish', 'progress',
+                
+                # Constructive feedback
+                'feedback', 'advice', 'suggestion', 'suggestions', 'recommend', 'recommendation',
+                'improve', 'improvement', 'better', 'enhance', 'strengthen', 'develop',
+                'consider', 'try', 'attempt', 'practice', 'work on', 'focus on',
+                'change', 'modify', 'adjust', 'revise', 'edit', 'correction',
+                
+                # Emotional support
+                'support', 'supportive', 'encourage', 'encouragement', 'motivate', 'motivation',
+                'inspire', 'inspiration', 'confidence', 'believe', 'trust', 'faith',
+                'comfort', 'reassure', 'calm', 'relax', 'stress', 'pressure',
+                'worry', 'anxiety', 'fear', 'nervous', 'overwhelmed', 'difficult',
+                
+                # Help and guidance
+                'help', 'helping', 'assist', 'assistance', 'aid', 'guidance', 'guide',
+                'mentor', 'coach', 'tutor', 'teach', 'instruct', 'train', 'direct',
+                'lead', 'show', 'demonstrate', 'model', 'example', 'resource', 'tool',
+                
+                # Validation and empathy
+                'understand', 'normal', 'common', 'typical', 'natural', 'okay',
+                'fine', 'alright', 'valid', 'reasonable', 'legitimate', 'justified',
+                'feel', 'feeling', 'emotion', 'experience', 'situation', 'challenge',
+                'struggle', 'difficulty', 'hard', 'tough', 'overwhelming', 'stressful',
+                
+                # Relationship building
+                'care', 'concern', 'listen', 'hear', 'respect', 'appreciate',
+                'value', 'important', 'matter', 'significant', 'worthwhile'
+            ],
+            
+            "Exploration and Reflection": [
+                # Self-reflection
+                'reflect', 'reflection', 'reflective', 'think about', 'consider',
+                'contemplate', 'ponder', 'meditate', 'introspect', 'self-examine',
+                'look back', 'review', 'evaluate', 'assess', 'analyze yourself',
+                'personal', 'self', 'own', 'individual', 'unique', 'perspective',
+                
+                # Self-awareness
+                'self-awareness', 'self-knowledge', 'identity', 'personality', 'character',
+                'values', 'beliefs', 'principles', 'philosophy', 'worldview',
+                'strength', 'strengths', 'weakness', 'weaknesses', 'limitation',
+                'ability', 'abilities', 'talent', 'gift', 'potential', 'capacity',
+                
+                # Exploration and discovery
+                'explore', 'exploration', 'discover', 'discovery', 'investigate',
+                'examine', 'research', 'study', 'learn about', 'find out',
+                'curious', 'curiosity', 'wonder', 'question', 'possibility',
+                'opportunity', 'option', 'alternative', 'path', 'direction',
+                
+                # Growth and development
+                'grow', 'growth', 'develop', 'development', 'evolve', 'change',
+                'transform', 'transformation', 'progress', 'advance', 'improve',
+                'learn', 'learning', 'experience', 'journey', 'process', 'stage',
+                
+                # Career and life exploration
+                'career', 'profession', 'field', 'industry', 'area', 'domain',
+                'interest', 'interests', 'passion', 'passionate', 'love', 'enjoy',
+                'fulfill', 'fulfillment', 'satisfaction', 'purpose', 'meaning',
+                'calling', 'vocation', 'life', 'lifestyle', 'balance', 'priorities',
+                
+                # Future thinking
+                'future', 'vision', 'dream', 'aspiration', 'goal', 'hope',
+                'imagine', 'envision', 'picture', 'see yourself', 'become',
+                'want to be', 'wish', 'desire', 'ambition', 'plan', 'intention',
+                
+                # Questioning and wondering
+                'what if', 'suppose', 'imagine', 'consider', 'think about',
+                'wonder', 'curious', 'question', 'doubt', 'uncertain',
+                'maybe', 'perhaps', 'possibly', 'might', 'could', 'would'
+            ]
+        }
+        
+        # High priority multi-word phrases (given extra weight)
+        self.high_priority_keywords = {
+            "Goal Setting and Planning": [
+                'academic plan', 'graduation plan', 'career path', 'course selection',
+                'degree plan', 'study plan', 'time management', 'goal setting',
+                'career goals', 'academic goals', 'long term goals', 'short term goals',
+                'internship application', 'job search', 'skill development'
             ],
             "Problem Solving and Critical Thinking": [
-                "problem", "issue", "challenge", "difficult", "struggle", 
-                "solve", "solution", "fix", "trouble", "stuck"
+                'problem solving', 'critical thinking', 'analytical thinking',
+                'troubleshooting', 'decision making', 'root cause', 'systematic approach',
+                'engineering design', 'design process', 'solution development',
+                'critical analysis', 'logical reasoning', 'problem analysis'
             ],
             "Understanding and Clarification": [
-                "understand", "clarify", "explain", "confused", "unclear", 
-                "question", "ask", "what", "how", "why"
+                'detailed explanation', 'clarify confusion', 'help me understand',
+                'what does this mean', 'can you explain', 'i dont understand',
+                'make it clear', 'break it down', 'step by step', 'in simple terms',
+                'for example', 'what exactly', 'how does this work'
+            ],
+            "Feedback and Support": [
+                'constructive feedback', 'personalized advice', 'emotional support',
+                'positive reinforcement', 'encouragement', 'you can do it',
+                'keep going', 'dont give up', 'believe in yourself', 'well done',
+                'good job', 'making progress', 'on the right track'
+            ],
+            "Exploration and Reflection": [
+                'self reflection', 'career exploration', 'personal growth',
+                'self awareness', 'think about yourself', 'what interests you',
+                'your strengths', 'your values', 'life goals', 'personal development',
+                'explore options', 'discover yourself', 'reflect on experience'
             ]
         }
     
     def classify(self, text):
         text_lower = text.lower()
-        scores = {}
+        scores = {category: 0 for category in self.intent_keywords.keys()}
         
-        for intent, keywords in self.intent_keywords.items():
-            score = sum(1 for keyword in keywords if keyword in text_lower)
-            scores[intent] = score
+        # High priority multi-word phrases (weight = 3)
+        for category, category_keywords in self.high_priority_keywords.items():
+            for keyword in category_keywords:
+                if keyword in text_lower:
+                    scores[category] += 3
         
-        if not any(scores.values()):
+        # Individual keywords (weight = 1)
+        for category, category_keywords in self.intent_keywords.items():
+            for keyword in category_keywords:
+                if keyword in text_lower:
+                    scores[category] += 1
+        
+        # Select the category with the highest score
+        max_score = max(scores.values())
+        if max_score == 0:
             intent = "Understanding and Clarification"
             confidence = 0.5
         else:
             intent = max(scores, key=scores.get)
-            confidence = min(0.9, 0.5 + (scores[intent] * 0.1))
+            # Calculate confidence based on score strength
+            confidence = min(0.95, 0.5 + (max_score * 0.05))
         
         return {"intent": intent, "confidence": confidence}
+
+# Hugging Face Inference API classifier (optional)
+def _get_hf_token() -> str:
+    # Prefer Streamlit Secrets; fallback to env
+    try:
+        return st.secrets.get("HF_TOKEN", "")
+    except Exception:
+        return os.getenv("HF_TOKEN", "")
+
+def _get_hf_model() -> str:
+    # Set your model repo name via Secrets or env; e.g., "zylandy/mae-intent-classifier"
+    try:
+        return st.secrets.get("HF_MODEL", "")
+    except Exception:
+        return os.getenv("HF_MODEL", "")
+
+def hf_classify_via_api(text: str) -> Dict[str, Any]:
+    token = _get_hf_token()
+    model_name = _get_hf_model()
+    if not token or not model_name:
+        raise RuntimeError("HF token or model not configured")
+    headers = {"Authorization": f"Bearer {token}"}
+    url = f"https://api-inference.huggingface.co/models/{model_name}"
+    resp = requests.post(url, headers=headers, json={"inputs": text}, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    # Possible formats: [ {label, score}, ... ] OR [ [ {label, score}, ... ] ]
+    candidates: List[Dict[str, Any]]
+    if isinstance(data, list):
+        if data and isinstance(data[0], list):
+            candidates = data[0]
+        else:
+            candidates = data  # type: ignore
+    else:
+        raise ValueError("Unexpected HF response format")
+
+    if not candidates:
+        raise ValueError("Empty HF response")
+    top = max(candidates, key=lambda x: x.get("score", 0.0))
+    label = top.get("label", "Understanding and Clarification")
+    score = float(top.get("score", 0.5))
+    return {"intent": label, "confidence": score}
 
 # Student persona data
 STUDENT_PERSONAS = {
@@ -236,11 +464,20 @@ def get_intent_badge_class(intent: str) -> str:
 def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
     """Analyze intent of a message"""
     try:
+        # Try Hugging Face API first if configured
+        try:
+            hf_result = hf_classify_via_api(text)
+            if isinstance(hf_result.get("intent"), str):
+                return {
+                    "intent": hf_result.get("intent", "Unknown"),
+                    "confidence": hf_result.get("confidence", 0.0)
+                }
+        except Exception:
+            pass
+
+        # Fallback to simple keyword classifier
         result = intent_classifier.classify(text)
-        return {
-            "intent": result.get("intent", "Unknown"),
-            "confidence": result.get("confidence", 0.0)
-        }
+        return {"intent": result.get("intent", "Unknown"), "confidence": result.get("confidence", 0.0)}
     except Exception as e:
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
@@ -507,8 +744,7 @@ def main():
                 st.markdown(f"""
                 <div class="chat-message student-message">
                     <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
-                    <br><br>
-                    Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    <div>Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -521,8 +757,7 @@ def main():
                 st.markdown(f"""
                 <div class="chat-message advisor-message">
                     <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
-                    <br><br>
-                    Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    <div>Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -592,13 +827,13 @@ def main():
                             
                         except Exception as e:
                             st.error(f"Error generating student response: {str(e)}")
-                        # Add a fallback response
-                        st.session_state.messages.append({
-                            "role": "student",
-                            "content": "I'm not sure how to respond to that. Could you help me understand better?",
-                            "timestamp": datetime.now()
-                        })
-                        st.session_state.student_intents.append({"intent": "Understanding and Clarification", "confidence": 0.5})
+                            # Add a fallback response only on error
+                            st.session_state.messages.append({
+                                "role": "student",
+                                "content": "I'm not sure how to respond to that. Could you help me understand better?",
+                                "timestamp": datetime.now()
+                            })
+                            st.session_state.student_intents.append({"intent": "Understanding and Clarification", "confidence": 0.5})
                     
                     st.rerun()
                 else:

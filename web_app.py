@@ -12,8 +12,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from models.intent_classifier import IntentClassifier
 from student_persona_manager import StudentPersonaManager
 from core.chatbot_pipeline import ChatbotPipeline
-from cost_control import CostController, get_user_id, show_usage_warning, show_cost_info
-from local_llm_fallback import CostAwarePipeline
 
 # Page configuration
 st.set_page_config(
