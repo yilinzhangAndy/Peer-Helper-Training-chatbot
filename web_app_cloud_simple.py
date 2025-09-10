@@ -6,6 +6,9 @@ import json
 from datetime import datetime
 import random
 import requests
+import openai
+from uf_navigator_api import UFNavigatorAPI
+from mae_knowledge_base import MAEKnowledgeBase
 
 # Page configuration
 st.set_page_config(
@@ -481,6 +484,182 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
     except Exception as e:
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
+def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, knowledge_base: MAEKnowledgeBase) -> str:
+    """使用RAG + UF Navigator API生成学生回复"""
+    try:
+        # 1. 检索相关知识
+        relevant_docs = knowledge_base.search(advisor_message)
+        knowledge_context = "\n".join(relevant_docs) if relevant_docs else ""
+        
+        # 2. 使用UF Navigator API生成回复
+        reply = uf_api.generate_student_reply(advisor_message, persona, knowledge_context)
+        
+        if reply:
+            return reply
+        else:
+            # Fallback到本地生成
+            return generate_student_reply_fallback(advisor_message, persona)
+            
+    except Exception as e:
+        st.warning(f"RAG + UF API失败: {str(e)}")
+        return generate_student_reply_fallback(advisor_message, persona)
+
+def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
+    """Semantic-aware fallback reply generation based on advisor message content"""
+    try:
+        # Enhanced responses organized by semantic categories
+        responses = {
+            "alpha": {
+                "encouragement": [
+                    "Thank you for the encouragement! I really appreciate your support. I'm feeling more confident about this now.",
+                    "That's exactly what I needed to hear. I'll definitely take your advice and keep working hard.",
+                    "I'm grateful for your help. This makes me feel more optimistic about my engineering journey.",
+                    "Your words really mean a lot to me. I was feeling uncertain, but now I feel more motivated.",
+                    "I appreciate you believing in me. I'll do my best to follow through on your suggestions."
+                ],
+                "clarification": [
+                    "I'm following along, but I'd like to make sure I understand completely. Could you explain that differently?",
+                    "I think I understand, but I want to make sure I've got it right. Could you clarify a bit more?",
+                    "I'm still a bit confused about some details. Could you help me understand this better?",
+                    "I want to make sure I'm on the right track. Could you walk me through that again?",
+                    "I'm getting it, but I'd like to confirm my understanding. What's the key point I should focus on?"
+                ],
+                "planning": [
+                    "That sounds like a good plan! I'm excited to work on this. Could you help me break this down into smaller steps?",
+                    "I like the idea of having a plan. What timeline do you think would be realistic for someone at my level?",
+                    "This planning approach makes sense. How do I know if my goals are appropriate for my current level?",
+                    "I want to make sure I'm setting realistic goals. What would you consider a good starting point for me?",
+                    "I appreciate the structured approach. What milestones should I be aiming for?"
+                ],
+                "exploration": [
+                    "This is really making me think about my future. I'm curious about exploring more options. What else should I consider?",
+                    "That's an interesting perspective. I hadn't thought about it that way before. What made you consider this approach?",
+                    "I'm curious about this. Could you tell me more about how this has worked for other students?",
+                    "This is new to me. I'd like to explore this further. What resources would you recommend?",
+                    "That's a good question. I'm still figuring out what I want to focus on. What do you think would be most valuable?"
+                ]
+            },
+            "beta": {
+                "encouragement": [
+                    "I really appreciate you saying that. It means a lot to me, even though I still feel uncertain.",
+                    "Thank you for being so understanding. I'm trying to believe in myself more.",
+                    "Your support helps, but I'm still worried about whether I can really succeed in engineering.",
+                    "I'm grateful for your patience with me. I know I can be difficult sometimes.",
+                    "Thank you for not giving up on me. I'll try to be more confident in my abilities."
+                ],
+                "clarification": [
+                    "I'm not sure I understand completely. I don't want to seem stupid, but could you explain it differently?",
+                    "I'm still confused about this. Maybe I'm not cut out for engineering after all.",
+                    "I don't want to bother you with more questions, but I'm still struggling to understand.",
+                    "I'm sorry, but I'm still not getting it. Could you try a different approach?",
+                    "I feel like I'm missing something basic. Could you help me figure out what it is?"
+                ],
+                "planning": [
+                    "I'm not sure how to set realistic goals. What would be appropriate for someone at my level?",
+                    "I feel like my goals might be too ambitious. How do I know what's achievable?",
+                    "I'm worried about failing. What's a safe starting point that I can build from?",
+                    "I don't want to set myself up for disappointment. What would be a reasonable first goal?",
+                    "I'm nervous about committing to goals. How do I know I can actually achieve them?"
+                ],
+                "exploration": [
+                    "I'm not sure I understand all the options. Could you explain what each path would involve?",
+                    "I feel overwhelmed by all the choices. What would you recommend for someone who's just starting out?",
+                    "I'm worried I might make the wrong decision. How do I know which direction is right for me?",
+                    "This is all new to me. I'm not sure where to begin. Could you help me understand the basics?",
+                    "I'm feeling lost with all these options. What would be a good starting point for someone like me?"
+                ]
+            },
+            "delta": {
+                "encouragement": [
+                    "Thanks for the feedback! I'll definitely consider what you've said and see how it applies to my situation.",
+                    "I appreciate your perspective. Let me think about this and see how I can implement your suggestions.",
+                    "That's helpful advice. I'll work on incorporating that into my approach.",
+                    "Your input is valuable. I'll analyze this and see how it fits with my current strategy.",
+                    "Good point. I'll evaluate this feedback and determine the best way forward."
+                ],
+                "clarification": [
+                    "I see what you mean, but I'd like to make sure I understand correctly. Could you clarify?",
+                    "I think I get it, but let me make sure I've got the right approach. Could you confirm?",
+                    "I understand the general idea, but I want to make sure I'm implementing it correctly.",
+                    "That makes sense, but I want to verify my understanding. What's the most important aspect?",
+                    "I'm following your logic, but I'd like to confirm the key principles behind this approach."
+                ],
+                "planning": [
+                    "I like the strategic approach. I'm thinking about how to structure this for maximum impact. What's your recommendation?",
+                    "That makes sense. I'm planning how to implement this effectively. What timeline would you suggest?",
+                    "Good framework. I'm considering the best way to execute this plan. What resources would you recommend?",
+                    "This is a solid plan. I'm analyzing the implementation strategy. What's the most critical success factor?",
+                    "Excellent approach. I'm considering the long-term implications. What should I prioritize first?"
+                ],
+                "exploration": [
+                    "That's an interesting approach. I'm considering how this aligns with my long-term goals. What are your thoughts on the strategic implications?",
+                    "I appreciate the insight. I'm evaluating how this fits into my overall plan. What would you prioritize in my situation?",
+                    "Good point. I'm thinking about the best way to leverage this opportunity. What's your take on the timing?",
+                    "This is intriguing. I'm analyzing how this could benefit my career trajectory. What's your experience with this approach?",
+                    "That's a solid perspective. I'm considering the implementation strategy. What challenges should I anticipate?"
+                ]
+            },
+            "echo": {
+                "encouragement": [
+                    "Excellent! That's exactly the kind of guidance I was looking for. I'm excited to put this into practice.",
+                    "Perfect! I'm confident this approach will work well for me. Thanks for the great advice!",
+                    "That's fantastic! I love learning new strategies. I'm ready to take on this challenge.",
+                    "Outstanding! This is exactly what I needed. I'm energized and ready to implement this.",
+                    "Brilliant! I'm excited about the possibilities. This is going to be great!"
+                ],
+                "clarification": [
+                    "I think I understand, but let me make sure I've got it right. Could you confirm the key points?",
+                    "I'm following along well, but I want to make sure I'm not missing anything important.",
+                    "That makes sense! I just want to double-check that I'm approaching this the right way.",
+                    "I'm getting the concept, but I'd love to understand the deeper principles. Could you elaborate?",
+                    "This is fascinating! I want to make sure I understand all the nuances. What else should I know?"
+                ],
+                "planning": [
+                    "Excellent! I'm excited to create an ambitious plan. What would you consider a stretch goal for me?",
+                    "That's a great framework! I'm ready to set some challenging targets. What timeline would push me to grow?",
+                    "Perfect! I love having clear objectives. What would be the most impactful goals I could set?",
+                    "This is fantastic! I'm ready to set some really ambitious targets. What would be the ultimate goal?",
+                    "Outstanding! I'm excited about the possibilities. What would be the most challenging objective I could pursue?"
+                ],
+                "exploration": [
+                    "That's exciting! I love exploring new possibilities. What other opportunities should I be looking into?",
+                    "This is exactly what I was hoping for! I'm energized by the potential. What's the next step I should take?",
+                    "Fantastic! I'm ready to dive in and make the most of this. What resources do you recommend I explore?",
+                    "This is perfect! I'm excited about all the possibilities. What would be the most ambitious goal I could set?",
+                    "Excellent! I'm ready to take this to the next level. What advanced strategies should I consider?"
+                ]
+            }
+        }
+        
+        # Semantic analysis of advisor message
+        advisor_lower = advisor_message.lower()
+        
+        # Determine response category based on advisor message content
+        if any(word in advisor_lower for word in ['good', 'great', 'excellent', 'well done', 'proud', 'confident', 'believe', 'support', 'encourage']):
+            category = "encouragement"
+        elif any(word in advisor_lower for word in ['explain', 'clarify', 'understand', 'mean', 'what', 'how', 'why', 'example', 'detail']):
+            category = "clarification"
+        elif any(word in advisor_lower for word in ['plan', 'goal', 'strategy', 'approach', 'step', 'next', 'future', 'timeline', 'schedule']):
+            category = "planning"
+        elif any(word in advisor_lower for word in ['explore', 'consider', 'think about', 'option', 'possibility', 'interest', 'curious', 'discover']):
+            category = "exploration"
+        else:
+            # Default to clarification if no clear category
+            category = "clarification"
+        
+        # Get responses for the specific persona and category
+        persona_responses = responses.get(persona, responses["alpha"])
+        category_responses = persona_responses.get(category, persona_responses["clarification"])
+        
+        # Add some randomness to avoid exact repetition
+        import time
+        random.seed(int(time.time() * 1000) % 10000)
+        
+        return random.choice(category_responses)
+        
+    except Exception as e:
+        return "I'm not sure how to respond to that. Could you help me understand better?"
+
 def generate_student_reply(context: str, persona: str, advisor_intent: str) -> str:
     """Generate student reply based on persona and context"""
     persona_info = STUDENT_PERSONAS.get(persona, STUDENT_PERSONAS["alpha"])
@@ -666,6 +845,24 @@ def main():
     # Load components
     with st.spinner("Loading AI components..."):
         intent_classifier = SimpleIntentClassifier()
+        
+        # Initialize UF Navigator API and Knowledge Base
+        try:
+            uf_api = UFNavigatorAPI()
+            knowledge_base = MAEKnowledgeBase()
+            
+            # Test UF Navigator API connection
+            success, message = uf_api.test_connection()
+            if success:
+                st.success("✅ UF Navigator API connected successfully!")
+            else:
+                st.warning(f"⚠️ UF Navigator API connection failed: {message}")
+                uf_api = None
+                knowledge_base = None
+        except Exception as e:
+            st.warning(f"⚠️ Failed to initialize UF Navigator API: {str(e)}")
+            uf_api = None
+            knowledge_base = None
     
     # Initialize show_training state
     if "show_training" not in st.session_state:
@@ -803,16 +1000,24 @@ def main():
                     # Generate student response
                     with st.spinner("☁️ Generating student response..."):
                         try:
-                            # Get recent conversation context
-                            recent_messages = st.session_state.messages[-4:]
-                            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
-                            
-                            # Generate student reply
-                            student_reply = generate_student_reply(
-                                context=context,
-                                persona=selected_persona,
-                                advisor_intent=intent_result["intent"]
-                            )
+                            # Try RAG + UF Navigator API first
+                            if uf_api and knowledge_base:
+                                student_reply = generate_student_reply_with_rag_uf(
+                                    advisor_message=advisor_input,
+                                    persona=selected_persona,
+                                    uf_api=uf_api,
+                                    knowledge_base=knowledge_base
+                                )
+                            else:
+                                # Fallback to original method
+                                recent_messages = st.session_state.messages[-4:]
+                                context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
+                                
+                                student_reply = generate_student_reply(
+                                    context=context,
+                                    persona=selected_persona,
+                                    advisor_intent=intent_result["intent"]
+                                )
                             
                             # Add student response
                             st.session_state.messages.append({
