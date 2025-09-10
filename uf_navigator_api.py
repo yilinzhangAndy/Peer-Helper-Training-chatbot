@@ -28,42 +28,42 @@ class UFNavigatorAPI:
             # 构建增强prompt
             if knowledge_context:
                 prompt = f"""
-                基于以下MAE专业知识：
+                Based on the following MAE professional knowledge:
                 {knowledge_context}
                 
-                Peer Advisor说：{advisor_message}
+                Peer Advisor said: {advisor_message}
                 
-                请作为{persona}学生，基于以上信息生成回复。
-                回复应该：
-                1. 引用相关知识（如果相关）
-                2. 符合{persona}学生特点
-                3. 自然流畅，像真实对话
-                4. 长度适中（1-3句话）
-                5. 体现学生的思考过程
+                Please respond as a {persona} student based on the above information.
+                Your response should:
+                1. Reference relevant knowledge if applicable
+                2. Match the {persona} student characteristics
+                3. Be natural and conversational
+                4. Be moderate length (1-3 sentences)
+                5. Show the student's thinking process
                 
-                回复：
+                Response:
                 """
             else:
                 prompt = f"""
-                你是一个{persona}类型的学生，正在与peer advisor对话。
+                You are a {persona} type student having a conversation with a peer advisor.
                 
-                Peer Advisor说：{advisor_message}
+                Peer Advisor said: {advisor_message}
                 
-                请基于{persona}学生的特点，生成一个自然、真实的回复。
-                回复应该：
-                1. 符合{persona}学生的性格特点
-                2. 自然流畅，像真实对话
-                3. 长度适中（1-3句话）
-                4. 体现学生的思考过程
+                Please generate a natural and authentic response based on the {persona} student characteristics.
+                Your response should:
+                1. Match the {persona} student personality traits
+                2. Be natural and conversational
+                3. Be moderate length (1-3 sentences)
+                4. Show the student's thinking process
                 
-                回复：
+                Response:
                 """
             
             # 调用UF LiteLLM API - 使用可用的模型
             response = self.client.chat.completions.create(
                 model="llama-3.1-8b-instruct",  # 使用UF可用的模型
                 messages=[
-                    {"role": "system", "content": "你是一个专业的学术对话助手。"},
+                    {"role": "system", "content": "You are a professional academic conversation assistant. Always respond in English."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=200,
