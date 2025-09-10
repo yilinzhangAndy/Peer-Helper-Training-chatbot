@@ -947,7 +947,9 @@ def main():
                 st.markdown(f"""
                 <div class="chat-message student-message">
                     <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
-                    <div>Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}</div>
+                    <div class="intent-badge {intent_class}">
+                        {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -961,7 +963,9 @@ def main():
                 st.markdown(f"""
                 <div class="chat-message advisor-message">
                     <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
-                    <div>Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}</div>
+                    <div class="intent-badge {intent_class}">
+                        {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
