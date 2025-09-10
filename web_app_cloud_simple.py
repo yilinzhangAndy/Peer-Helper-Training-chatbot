@@ -485,13 +485,13 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
 def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> str:
-    """使用RAG + UF Navigator API生成学生回复"""
+    """使用RAG + UF LiteLLM API生成学生回复"""
     try:
         # 1. 检索相关知识
         relevant_docs = knowledge_base.search(advisor_message)
         knowledge_context = "\n".join(relevant_docs) if relevant_docs else ""
         
-        # 2. 使用UF Navigator API生成回复
+        # 2. 使用UF LiteLLM API生成回复
         reply = uf_api.generate_student_reply(advisor_message, persona, knowledge_context)
         
         if reply:
@@ -501,7 +501,7 @@ def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_ap
             return generate_student_reply_fallback(advisor_message, persona)
             
     except Exception as e:
-        st.warning(f"RAG + UF API失败: {str(e)}")
+        st.warning(f"RAG + UF LiteLLM API失败: {str(e)}")
         return generate_student_reply_fallback(advisor_message, persona)
 
 def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
@@ -846,21 +846,23 @@ def main():
     with st.spinner("Loading AI components..."):
         intent_classifier = SimpleIntentClassifier()
         
-        # Initialize UF Navigator API and Knowledge Base
+        # Initialize UF LiteLLM API and Knowledge Base
         try:
             uf_api = UFNavigatorAPI()
             knowledge_base = SimpleKnowledgeBase()
             
-            # Test UF Navigator API connection
+            # Test UF LiteLLM API connection
             success, message = uf_api.test_connection()
             if success:
-                st.success("✅ UF Navigator API connected successfully!")
+                st.success("✅ UF LiteLLM API connected successfully!")
             else:
-                st.warning(f"⚠️ UF Navigator API connection failed: {message}")
+                st.warning(f"⚠️ UF LiteLLM API connection failed: {message}")
+                st.info("🔄 Using fallback responses for student replies")
                 uf_api = None
                 knowledge_base = None
         except Exception as e:
-            st.warning(f"⚠️ Failed to initialize UF Navigator API: {str(e)}")
+            st.warning(f"⚠️ Failed to initialize UF LiteLLM API: {str(e)}")
+            st.info("🔄 Using fallback responses for student replies")
             uf_api = None
             knowledge_base = None
     
@@ -1000,7 +1002,7 @@ def main():
                     # Generate student response
                     with st.spinner("☁️ Generating student response..."):
                         try:
-                            # Try RAG + UF Navigator API first
+                            # Try RAG + UF LiteLLM API first
                             if uf_api and knowledge_base:
                                 student_reply = generate_student_reply_with_rag_uf(
                                     advisor_message=advisor_input,
