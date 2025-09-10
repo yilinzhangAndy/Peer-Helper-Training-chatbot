@@ -8,7 +8,7 @@ import random
 import requests
 import openai
 from uf_navigator_api import UFNavigatorAPI
-from mae_knowledge_base import MAEKnowledgeBase
+from simple_knowledge_base import SimpleKnowledgeBase
 
 # Page configuration
 st.set_page_config(
@@ -484,7 +484,7 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
     except Exception as e:
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
-def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, knowledge_base: MAEKnowledgeBase) -> str:
+def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> str:
     """使用RAG + UF Navigator API生成学生回复"""
     try:
         # 1. 检索相关知识
@@ -849,7 +849,7 @@ def main():
         # Initialize UF Navigator API and Knowledge Base
         try:
             uf_api = UFNavigatorAPI()
-            knowledge_base = MAEKnowledgeBase()
+            knowledge_base = SimpleKnowledgeBase()
             
             # Test UF Navigator API connection
             success, message = uf_api.test_connection()
