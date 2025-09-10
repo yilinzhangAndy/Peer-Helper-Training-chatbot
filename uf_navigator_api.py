@@ -7,9 +7,11 @@ class UFNavigatorAPI:
         self.api_key = "sk-FEhqmwbGafXtX9sv07rZLw"
         self.api_base = "https://navigator.ufl.edu/api/v1"
         
-        # 配置OpenAI客户端
-        openai.api_key = self.api_key
-        openai.api_base = self.api_base
+        # 配置OpenAI客户端 (新版本)
+        self.client = openai.OpenAI(
+            api_key=self.api_key,
+            base_url=self.api_base
+        )
     
     def generate_student_reply(self, advisor_message, persona, knowledge_context=""):
         """使用UF Navigator API生成学生回复"""
@@ -48,8 +50,8 @@ class UFNavigatorAPI:
                 回复：
                 """
             
-            # 调用UF Navigator API
-            response = openai.ChatCompletion.create(
+            # 调用UF Navigator API (新版本)
+            response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "你是一个专业的学术对话助手。"},
@@ -68,7 +70,7 @@ class UFNavigatorAPI:
     def test_connection(self):
         """测试API连接"""
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "user", "content": "Hello, this is a test."}
