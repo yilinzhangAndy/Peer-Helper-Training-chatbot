@@ -934,10 +934,14 @@ def main():
         st.header("💬 Training Conversation")
         
         # Display conversation history
+        # Track student and advisor message counts separately
+        student_count = 0
+        advisor_count = 0
+        
         for i, message in enumerate(st.session_state.messages):
             if message["role"] == "student":
                 # Student message with intent
-                intent_info = st.session_state.student_intents[i] if i < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
+                intent_info = st.session_state.student_intents[student_count] if student_count < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
                 intent_class = get_intent_badge_class(intent_info["intent"])
                 
                 st.markdown(f"""
@@ -947,10 +951,11 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
                 
+                student_count += 1
+                
             else:
                 # Advisor message with intent
-                advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
-                intent_info = st.session_state.advisor_intents[advisor_idx] if advisor_idx < len(st.session_state.advisor_intents) else {"intent": "Unknown", "confidence": 0.0}
+                intent_info = st.session_state.advisor_intents[advisor_count] if advisor_count < len(st.session_state.advisor_intents) else {"intent": "Unknown", "confidence": 0.0}
                 intent_class = get_intent_badge_class(intent_info["intent"])
                 
                 st.markdown(f"""
@@ -959,6 +964,8 @@ def main():
                     <div>Classification Result: {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                advisor_count += 1
         
         # Generate initial student message if conversation is empty
         if not st.session_state.messages:
@@ -1011,14 +1018,10 @@ def main():
                                     knowledge_base=knowledge_base
                                 )
                             else:
-                                # Fallback to original method
-                                recent_messages = st.session_state.messages[-4:]
-                                context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
-                                
-                                student_reply = generate_student_reply(
-                                    context=context,
-                                    persona=selected_persona,
-                                    advisor_intent=intent_result["intent"]
+                                # Fallback to semantic-aware method
+                                student_reply = generate_student_reply_fallback(
+                                    advisor_message=advisor_input,
+                                    persona=selected_persona
                                 )
                             
                             # Add student response
@@ -1086,23 +1089,31 @@ def main():
             same_intent_pairs = 0
             different_intent_pairs = 0
             
+            # Find student-advisor pairs
+            student_count = 0
+            advisor_count = 0
+            
             for i in range(1, len(st.session_state.messages)):
                 if (st.session_state.messages[i-1]["role"] == "student" and 
                     st.session_state.messages[i]["role"] == "advisor"):
                     
-                    student_idx = len([m for m in st.session_state.messages[:i] if m["role"] == "student"]) - 1
-                    advisor_idx = len([m for m in st.session_state.messages[:i+1] if m["role"] == "advisor"]) - 1
-                    
-                    if (student_idx < len(st.session_state.student_intents) and 
-                        advisor_idx < len(st.session_state.advisor_intents)):
+                    # Use the current counts for indexing
+                    if (student_count < len(st.session_state.student_intents) and 
+                        advisor_count < len(st.session_state.advisor_intents)):
                         
-                        student_intent = st.session_state.student_intents[student_idx]["intent"]
-                        advisor_intent = st.session_state.advisor_intents[advisor_idx]["intent"]
+                        student_intent = st.session_state.student_intents[student_count]["intent"]
+                        advisor_intent = st.session_state.advisor_intents[advisor_count]["intent"]
                         
                         if student_intent == advisor_intent:
                             same_intent_pairs += 1
                         else:
                             different_intent_pairs += 1
+                    
+                    # Update counts
+                    if st.session_state.messages[i-1]["role"] == "student":
+                        student_count += 1
+                    if st.session_state.messages[i]["role"] == "advisor":
+                        advisor_count += 1
             
             st.write(f"• **Same intent pairs**: {same_intent_pairs}")
             st.write(f"• **Different intent pairs**: {different_intent_pairs}")
