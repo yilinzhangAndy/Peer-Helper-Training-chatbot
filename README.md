@@ -104,6 +104,22 @@ The system provides detailed analysis including:
    streamlit run web_app_cloud_simple.py
    ```
 
+### Local CLI Training Scripts
+
+For local development and testing, the repository includes several CLI training scripts:
+
+- **`advisor_training_multiturn_with_intent.py`**: Full-featured CLI training with intent classification and conversation analysis
+- **`advisor_training_multiturn.py`**: Basic CLI training with multi-turn conversations
+- **`advisor_training.py`**: Simple CLI training script
+- **`direct_test.py`**: Direct testing script for components
+- **`test_pipeline.py`**: Pipeline testing script
+- **`test_step2.py`**: Step 2 testing script
+
+To run CLI training:
+```bash
+python advisor_training_multiturn_with_intent.py
+```
+
 ### Environment Variables
 
 The application uses the following API keys (configured in the code):
@@ -115,19 +131,32 @@ The application uses the following API keys (configured in the code):
 
 ```
 chatbot/
-├── web_app_cloud_simple.py      # Main Streamlit application
-├── uf_navigator_api.py          # UF LiteLLM API client
-├── simple_knowledge_base.py     # RAG knowledge base
-├── student_persona_manager.py   # Student persona management
+├── web_app_cloud_simple.py                    # Main Streamlit application
+├── uf_navigator_api.py                        # UF LiteLLM API client
+├── simple_knowledge_base.py                   # RAG knowledge base
+├── student_persona_manager.py                 # Student persona management
+├── advisor_training_multiturn_with_intent.py  # Local CLI training script
+├── advisor_training_multiturn.py              # Basic CLI training script
+├── advisor_training.py                        # Simple CLI training script
+├── direct_test.py                             # Direct testing script
+├── test_pipeline.py                           # Pipeline testing script
+├── test_step2.py                              # Step 2 testing script
 ├── models/
 │   ├── __init__.py
-│   └── intent_classifier.py     # RoBERTa intent classifier
+│   └── intent_classifier.py                   # RoBERTa intent classifier
+├── core/
+│   └── chatbot_pipeline.py                    # Core chatbot pipeline
+├── personas/
+│   ├── __init__.py
+│   └── persona_manager.py                     # Persona management system
+├── analysis/
+│   └── __init__.py                            # Analysis module
 ├── knowledge_base/
-│   ├── faq_knowledge.json       # FAQ knowledge base
-│   ├── scenario_knowledge.json  # Scenario-based knowledge
-│   └── training_knowledge.json  # Training resources
-├── requirements.txt             # Python dependencies
-└── README.md                   # This file
+│   ├── faq_knowledge.json                     # FAQ knowledge base
+│   ├── scenario_knowledge.json                # Scenario-based knowledge
+│   └── training_knowledge.json                # Training resources
+├── requirements.txt                           # Python dependencies
+└── README.md                                  # This file
 ```
 
 ## 🔧 Configuration
