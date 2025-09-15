@@ -530,24 +530,23 @@ def save_to_google_sheets(session_data: Dict[str, Any]) -> bool:
         if not st.session_state.get('allow_logging', False):
             return False
             
-        # For now, we'll use a simple approach with Streamlit secrets
-        # In production, you'd set up Google Sheets API credentials
+        # Get Google Sheets URL and API Key from secrets
         sheet_url = st.secrets.get("GOOGLE_SHEETS_URL", "")
+        api_key = st.secrets.get("GOOGLE_API_KEY", "")
+        
         if not sheet_url:
             return False
             
-        # Prepare data for logging
-        log_data = {
-            "session_id": session_data.get("session_id", ""),
-            "timestamp": datetime.now().isoformat(),
-            "persona": session_data.get("persona", ""),
-            "message_count": session_data.get("message_count", 0),
-            "conversation_summary": session_data.get("summary", "")
-        }
+        # Try simple API Key method first
+        if api_key:
+            try:
+                from simple_google_sheets import log_to_google_sheets
+                return log_to_google_sheets(session_data, sheet_url, api_key)
+            except ImportError:
+                pass
         
-        # In a real implementation, you'd use gspread to append to Google Sheets
-        # For now, we'll just log to console (you can replace with actual Google Sheets API)
-        print(f"Logging session: {log_data}")
+        # Fallback to console logging
+        print(f"Logging session: {session_data}")
         return True
         
     except Exception as e:
