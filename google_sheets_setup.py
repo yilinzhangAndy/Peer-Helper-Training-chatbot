@@ -23,9 +23,8 @@ from datetime import datetime
 def setup_google_sheets():
     """Setup Google Sheets for logging"""
     
-    # You'll need to replace this with your actual credentials
-    # Download from Google Cloud Console -> Service Accounts
-    credentials_path = "path/to/your/credentials.json"
+    # Replace this with the path to your downloaded credentials.json file
+    credentials_path = "credentials.json"
     
     try:
         # Authenticate
@@ -90,13 +89,16 @@ if __name__ == "__main__":
     print("Google Sheets Setup for Chatbot Logging")
     print("=" * 50)
     
-    # Uncomment to run setup
-    # setup_google_sheets()
+    # Run setup
+    sheet_url = setup_google_sheets()
     
-    print("\nTo complete setup:")
-    print("1. Create Google Cloud Project")
-    print("2. Enable Google Sheets API")
-    print("3. Create Service Account")
-    print("4. Download credentials JSON")
-    print("5. Run setup_google_sheets() with your credentials")
-    print("6. Add sheet URL to Streamlit Secrets as GOOGLE_SHEETS_URL")
+    if sheet_url:
+        print(f"\n✅ Setup completed successfully!")
+        print(f"📊 Your Google Sheet URL: {sheet_url}")
+        print(f"\n📋 Next steps:")
+        print(f"1. Copy this URL: {sheet_url}")
+        print(f"2. Go to your Streamlit Cloud app")
+        print(f"3. Add this URL to Streamlit Secrets as 'GOOGLE_SHEETS_URL'")
+        print(f"4. Your chatbot will now log conversations to Google Sheets!")
+    else:
+        print(f"\n❌ Setup failed. Please check your credentials and try again.")
