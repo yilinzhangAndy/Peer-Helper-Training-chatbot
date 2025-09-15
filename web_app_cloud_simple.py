@@ -1,12 +1,15 @@
 import streamlit as st
 import os
 import sys
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
 import random
 import requests
 import openai
+import pandas as pd
+import io
+import uuid
 from uf_navigator_api import UFNavigatorAPI
 from simple_knowledge_base import SimpleKnowledgeBase
 
@@ -519,6 +522,74 @@ def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_ap
         st.warning(f"RAG + UF LiteLLM API失败: {str(e)}")
         return generate_student_reply_fallback(advisor_message, persona)
 
+# Google Sheets logging functionality
+def save_to_google_sheets(session_data: Dict[str, Any]) -> bool:
+    """Save session data to Google Sheets (optional logging)"""
+    try:
+        # Check if logging is enabled
+        if not st.session_state.get('allow_logging', False):
+            return False
+            
+        # For now, we'll use a simple approach with Streamlit secrets
+        # In production, you'd set up Google Sheets API credentials
+        sheet_url = st.secrets.get("GOOGLE_SHEETS_URL", "")
+        if not sheet_url:
+            return False
+            
+        # Prepare data for logging
+        log_data = {
+            "session_id": session_data.get("session_id", ""),
+            "timestamp": datetime.now().isoformat(),
+            "persona": session_data.get("persona", ""),
+            "message_count": session_data.get("message_count", 0),
+            "conversation_summary": session_data.get("summary", "")
+        }
+        
+        # In a real implementation, you'd use gspread to append to Google Sheets
+        # For now, we'll just log to console (you can replace with actual Google Sheets API)
+        print(f"Logging session: {log_data}")
+        return True
+        
+    except Exception as e:
+        print(f"Error logging to Google Sheets: {e}")
+        return False
+
+def export_session_data() -> Dict[str, Any]:
+    """Export current session data for download"""
+    if not st.session_state.messages:
+        return {}
+    
+    # Generate session ID if not exists
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())[:8]
+    
+    # Prepare export data
+    export_data = {
+        "session_info": {
+            "session_id": st.session_state.session_id,
+            "persona": st.session_state.get('selected_persona', 'unknown'),
+            "start_time": st.session_state.messages[0]["timestamp"].isoformat() if st.session_state.messages else "",
+            "end_time": datetime.now().isoformat(),
+            "message_count": len(st.session_state.messages)
+        },
+        "conversation": [],
+        "analysis": {
+            "student_intents": st.session_state.get('student_intents', []),
+            "advisor_intents": st.session_state.get('advisor_intents', [])
+        }
+    }
+    
+    # Add conversation messages
+    for i, message in enumerate(st.session_state.messages):
+        export_data["conversation"].append({
+            "turn": i + 1,
+            "role": message["role"],
+            "content": message["content"],
+            "timestamp": message["timestamp"].isoformat()
+        })
+    
+    return export_data
+
 def generate_student_opening_with_uf(persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> Optional[str]:
     """Use UF LiteLLM + RAG to synthesize a persona-consistent opening question (1–2 sentences)."""
     try:
@@ -975,9 +1046,21 @@ def main():
             # Session controls
             st.header("🎮 Session Controls")
             if st.button("🔄 Start New Conversation"):
+                # Log current session if logging is enabled
+                if st.session_state.allow_logging and st.session_state.messages:
+                    session_data = {
+                        "session_id": st.session_state.session_id,
+                        "persona": st.session_state.get('selected_persona', 'unknown'),
+                        "message_count": len(st.session_state.messages),
+                        "summary": f"Conversation with {len(st.session_state.messages)} messages"
+                    }
+                    save_to_google_sheets(session_data)
+                
+                # Reset session
                 st.session_state.messages = []
                 st.session_state.student_intents = []
                 st.session_state.advisor_intents = []
+                st.session_state.session_id = str(uuid.uuid4())[:8]
                 st.rerun()
             
             if st.button("🏠 Back to Home"):
@@ -989,6 +1072,8 @@ def main():
         st.session_state.messages = []
         st.session_state.student_intents = []
         st.session_state.advisor_intents = []
+        st.session_state.allow_logging = False
+        st.session_state.session_id = str(uuid.uuid4())[:8]
     
     # Main chat interface (only show in training mode)
     if st.session_state.show_training:
@@ -1118,6 +1203,65 @@ def main():
                     st.rerun()
                 else:
                     st.warning("Please enter a response before sending.")
+        
+        # Logging consent and export section
+        if st.session_state.messages:
+            st.header("📊 Session Management")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Logging consent
+                st.subheader("🔒 Privacy & Logging")
+                allow_logging = st.checkbox(
+                    "Allow anonymous session logging for research",
+                    value=st.session_state.allow_logging,
+                    help="Help improve the system by allowing anonymous logging of conversation patterns. No personal information is collected."
+                )
+                st.session_state.allow_logging = allow_logging
+                
+                if allow_logging:
+                    st.info("✅ Your session will be anonymously logged for research purposes")
+                else:
+                    st.info("🔒 Your session will not be logged")
+            
+            with col2:
+                # Export functionality
+                st.subheader("💾 Export Session")
+                
+                if st.button("📥 Download Session Data"):
+                    export_data = export_session_data()
+                    if export_data:
+                        # Create JSON download
+                        json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
+                        st.download_button(
+                            label="📄 Download as JSON",
+                            data=json_str,
+                            file_name=f"chatbot_session_{st.session_state.session_id}.json",
+                            mime="application/json"
+                        )
+                        
+                        # Create CSV download
+                        df_data = []
+                        for msg in export_data["conversation"]:
+                            df_data.append({
+                                "Turn": msg["turn"],
+                                "Role": msg["role"],
+                                "Content": msg["content"],
+                                "Timestamp": msg["timestamp"]
+                            })
+                        
+                        if df_data:
+                            df = pd.DataFrame(df_data)
+                            csv = df.to_csv(index=False)
+                            st.download_button(
+                                label="📊 Download as CSV",
+                                data=csv,
+                                file_name=f"chatbot_session_{st.session_state.session_id}.csv",
+                                mime="text/csv"
+                            )
+                    else:
+                        st.warning("No conversation data to export")
         
         # Analysis section
         if st.session_state.messages:
