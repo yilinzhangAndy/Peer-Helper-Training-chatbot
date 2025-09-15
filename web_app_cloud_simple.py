@@ -389,7 +389,11 @@ STUDENT_PERSONAS = {
             "I've been thinking about joining some engineering clubs, but I'm not sure which ones would be best for someone like me. I want to get involved but I'm worried I might not fit in with the typical engineering student crowd. What clubs would you recommend?",
             "I'm doing okay in my classes, but I feel like I'm not as confident as some of my classmates. I'm willing to work hard and ask questions, but I'm not sure if I'm on the right track for a successful engineering career. How can I build more confidence?",
             "I'm interested in working with faculty on research projects, but I'm not sure how to approach professors. I don't want to seem like I'm bothering them, but I really want to get involved. What's the best way to start?",
-            "I'm trying to decide whether to pursue an internship this summer. I think it would be valuable experience, but I'm worried I'm not ready yet. Some of my friends seem so much more prepared than I am. Should I wait until I'm more confident?"
+            "I'm trying to decide whether to pursue an internship this summer. I think it would be valuable experience, but I'm worried I'm not ready yet. Some of my friends seem so much more prepared than I am. Should I wait until I'm more confident?",
+            "I want to get involved in a project team, but I'm unsure whether to prioritize technical build experience or leadership roles first. Which order would help me grow best?",
+            "I like talking to faculty, but I'm not sure how to follow up after a first meeting without being awkward. What should I say next time?",
+            "I feel motivated but sometimes overwhelmed by options — research, clubs, internships. How do I choose a first step that isn't too risky?",
+            "I’m interested in robotics but don’t have much hands-on experience yet. What’s a good way to start building skills without getting lost?"
         ]
     },
     "beta": {
@@ -407,7 +411,10 @@ STUDENT_PERSONAS = {
             "I'm starting to think I made a mistake choosing engineering. The classes are so much harder than I expected, and I don't feel like I belong here. Everyone else seems so confident and smart. Maybe I should switch to something easier?",
             "I've been avoiding going to office hours because I'm afraid the professor will think I'm not smart enough for this major. But I'm really falling behind in my coursework. I don't know how to get help without feeling embarrassed.",
             "I see other students joining clubs and getting involved, but I just don't feel comfortable in those social situations. I'm worried people will judge me or think I'm not good enough. Is it okay if I just focus on my classes?",
-            "I failed my last exam and I'm really discouraged. I studied hard, but I still didn't do well. I'm starting to doubt if I can handle this major. Should I consider switching to something else?"
+            "I failed my last exam and I'm really discouraged. I studied hard, but I still didn't do well. I'm starting to doubt if I can handle this major. Should I consider switching to something else?",
+            "Group projects make me nervous because I'm afraid of letting people down. How can I contribute without feeling like I'm dragging the team?",
+            "I want to ask for help but I don't know how to phrase the question without sounding like I don't belong here. Any tips on what to say?",
+            "When I see others succeed, it makes me question whether I can do this. How do I stop comparing myself and focus on improving?"
         ]
     },
     "delta": {
@@ -425,7 +432,11 @@ STUDENT_PERSONAS = {
             "I'm interested in getting some hands-on experience through internships, but I'm not sure how to go about finding opportunities. I want to make sure I'm competitive when I apply. Any advice?",
             "I've been thinking about joining some engineering clubs, but I'm not sure which ones would be most beneficial for my career goals. I want to make the most of my time here. What would you recommend?",
             "I'm trying to decide between different engineering specializations. I want to choose something that will lead to good job opportunities, but I also want to make sure I'll enjoy the work. How can I explore my options?",
-            "I'm concerned about the job market and whether I'll be competitive when I graduate. What should I be doing now to prepare for my career and make myself stand out to employers?"
+            "I'm concerned about the job market and whether I'll be competitive when I graduate. What should I be doing now to prepare for my career and make myself stand out to employers?",
+            "If I'm not into research, what are good ways to build real-world experience that employers value?",
+            "I don't always feel comfortable asking questions in class. Are there quieter ways to get help without drawing attention?",
+            "How can I decide whether to invest time in a club versus a part-time job if I want better career outcomes?",
+            "What skills should I focus on this semester to see the biggest improvement in confidence?"
         ]
     },
     "echo": {
@@ -443,7 +454,11 @@ STUDENT_PERSONAS = {
             "I want to make the most of my time here and I'm interested in both research and industry experience. How can I balance these interests and build a strong foundation for my future career?",
             "I'm thinking about pursuing graduate school after my bachelor's degree. What should I be doing now to prepare for that path and make myself a strong candidate?",
             "I'm interested in getting involved in some leadership roles in engineering organizations. I want to develop my leadership skills and make a positive impact. What opportunities would you recommend?",
-            "I'm really passionate about engineering and I want to explore different career paths. I'm interested in both technical and non-technical roles. How can I learn more about the various opportunities available?"
+            "I'm really passionate about engineering and I want to explore different career paths. I'm interested in both technical and non-technical roles. How can I learn more about the various opportunities available?",
+            "I'd like to pitch a new project idea to a faculty member, but I want to be respectful of their time. How can I structure that outreach well?",
+            "Between grad school and startup experience, which path would help me learn fastest if I'm excited by building and iterating?",
+            "I want to connect with alumni working in robotics. What's the best way to reach out without sounding generic?",
+            "If I take on too many commitments, how can I prioritize so I still deliver high-quality work?"
         ]
     }
 }
@@ -503,6 +518,52 @@ def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_ap
     except Exception as e:
         st.warning(f"RAG + UF LiteLLM API失败: {str(e)}")
         return generate_student_reply_fallback(advisor_message, persona)
+
+def generate_student_opening_with_uf(persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> Optional[str]:
+    """Use UF LiteLLM + RAG to synthesize a persona-consistent opening question (1–2 sentences)."""
+    try:
+        if not uf_api:
+            return None
+        # Build persona profile context
+        persona_data = STUDENT_PERSONAS.get(persona, {})
+        traits = ", ".join(persona_data.get("traits", []))
+        help_seeking = persona_data.get("help_seeking_behavior", "")
+        description = persona_data.get("description", "")
+
+        # Retrieve top knowledge
+        kb_texts = []
+        if knowledge_base:
+            kb_texts = knowledge_base.search("MAE advising student opening prompt") or []
+        knowledge_context = "\n".join(kb_texts)
+
+        # Prompt the model
+        system_msg = "You craft realistic first-turn student openings for a peer advising conversation. Always respond in English with 1–2 sentences."
+        user_prompt = f"""
+        Persona description: {description}
+        Traits: {traits}
+        Help-seeking behavior: {help_seeking}
+        MAE knowledge (optional):\n{knowledge_context}
+
+        Task: Write a natural, authentic opening message the student would say to a peer advisor. It should reflect the persona's confidence level and help-seeking style, mention a concrete topic (e.g., research, internships, clubs, specialization, confidence), and avoid clichés. Keep it 1–2 sentences.
+        """
+
+        response = uf_api.client.chat.completions.create(
+            model="llama-3.1-8b-instruct",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=120,
+            temperature=0.8,
+            top_p=0.95
+        )
+        text = response.choices[0].message.content.strip()
+        # Basic safety: ensure ends with sentence punctuation
+        if len(text) < 20:
+            return None
+        return text
+    except Exception:
+        return None
 
 def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
     """Semantic-aware fallback reply generation based on advisor message content"""
@@ -975,18 +1036,23 @@ def main():
         if not st.session_state.messages:
             if st.button("🎯 Start Conversation"):
                 with st.spinner("Student is thinking..."):
-                    opening_questions = STUDENT_PERSONAS[selected_persona]["opening_questions"]
-                    opening_question = random.choice(opening_questions)
+                    opening_text = None
+                    if uf_api and knowledge_base:
+                        opening_text = generate_student_opening_with_uf(selected_persona, uf_api, knowledge_base)
+                    if not opening_text:
+                        opening_pool = STUDENT_PERSONAS[selected_persona]["opening_questions"]
+                        opening_text = random.choice(opening_pool)
+
                     st.session_state.messages.append({
                         "role": "student",
-                        "content": opening_question,
+                        "content": opening_text,
                         "timestamp": datetime.now()
                     })
-                    
+
                     # Analyze student intent
-                    intent_result = analyze_intent(opening_question, intent_classifier, "student")
+                    intent_result = analyze_intent(opening_text, intent_classifier, "student")
                     st.session_state.student_intents.append(intent_result)
-                    
+
                     st.rerun()
         
         # Advisor input
