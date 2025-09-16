@@ -5,3 +5,4 @@ numpy>=1.24.0
 openai>=1.0.0
 sentence-transformers>=2.2.0
 gspread>=5.0.0
+openpyxl>=3.0.0

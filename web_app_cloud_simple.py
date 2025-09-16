@@ -537,7 +537,7 @@ def save_to_google_sheets(session_data: Dict[str, Any]) -> bool:
         if not sheet_url:
             return False
             
-        # Try simple API Key method first
+        # Try simple API Key method
         if api_key:
             try:
                 from simple_google_sheets import log_to_google_sheets
