@@ -7,6 +7,7 @@ from datetime import datetime
 import random
 import requests
 import openai
+import uuid
 # (Disabled optional logging/export dependencies)
 # import pandas as pd
 # import io
