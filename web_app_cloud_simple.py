@@ -7,9 +7,10 @@ from datetime import datetime
 import random
 import requests
 import openai
-import pandas as pd
-import io
-import uuid
+# (Disabled optional logging/export dependencies)
+# import pandas as pd
+# import io
+# import uuid
 from uf_navigator_api import UFNavigatorAPI
 from simple_knowledge_base import SimpleKnowledgeBase
 
@@ -524,34 +525,8 @@ def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_ap
 
 # Google Sheets logging functionality
 def save_to_google_sheets(session_data: Dict[str, Any]) -> bool:
-    """Save session data to Google Sheets (optional logging)"""
-    try:
-        # Check if logging is enabled
-        if not st.session_state.get('allow_logging', False):
-            return False
-            
-        # Get Google Sheets URL and API Key from secrets
-        sheet_url = st.secrets.get("GOOGLE_SHEETS_URL", "")
-        api_key = st.secrets.get("GOOGLE_API_KEY", "")
-        
-        if not sheet_url:
-            return False
-            
-        # Try simple API Key method
-        if api_key:
-            try:
-                from simple_google_sheets import log_to_google_sheets
-                return log_to_google_sheets(session_data, sheet_url, api_key)
-            except ImportError:
-                pass
-        
-        # Fallback to console logging
-        print(f"Logging session: {session_data}")
-        return True
-        
-    except Exception as e:
-        print(f"Error logging to Google Sheets: {e}")
-        return False
+    """Disabled: logging removed per user request."""
+    return False
 
 def export_session_data() -> Dict[str, Any]:
     """Export current session data for download"""
@@ -1203,64 +1178,7 @@ def main():
                 else:
                     st.warning("Please enter a response before sending.")
         
-        # Logging consent and export section
-        if st.session_state.messages:
-            st.header("📊 Session Management")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Logging consent
-                st.subheader("🔒 Privacy & Logging")
-                allow_logging = st.checkbox(
-                    "Allow anonymous session logging for research",
-                    value=st.session_state.allow_logging,
-                    help="Help improve the system by allowing anonymous logging of conversation patterns. No personal information is collected."
-                )
-                st.session_state.allow_logging = allow_logging
-                
-                if allow_logging:
-                    st.info("✅ Your session will be anonymously logged for research purposes")
-                else:
-                    st.info("🔒 Your session will not be logged")
-            
-            with col2:
-                # Export functionality
-                st.subheader("💾 Export Session")
-                
-                if st.button("📥 Download Session Data"):
-                    export_data = export_session_data()
-                    if export_data:
-                        # Create JSON download
-                        json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
-                        st.download_button(
-                            label="📄 Download as JSON",
-                            data=json_str,
-                            file_name=f"chatbot_session_{st.session_state.session_id}.json",
-                            mime="application/json"
-                        )
-                        
-                        # Create CSV download
-                        df_data = []
-                        for msg in export_data["conversation"]:
-                            df_data.append({
-                                "Turn": msg["turn"],
-                                "Role": msg["role"],
-                                "Content": msg["content"],
-                                "Timestamp": msg["timestamp"]
-                            })
-                        
-                        if df_data:
-                            df = pd.DataFrame(df_data)
-                            csv = df.to_csv(index=False)
-                            st.download_button(
-                                label="📊 Download as CSV",
-                                data=csv,
-                                file_name=f"chatbot_session_{st.session_state.session_id}.csv",
-                                mime="text/csv"
-                            )
-                    else:
-                        st.warning("No conversation data to export")
+        # Session management UI disabled per request
         
         # Analysis section
         if st.session_state.messages:
