@@ -1,149 +1,167 @@
+# simple_knowledge_base.py
+"""
+Simple knowledge base for RAG (Retrieval-Augmented Generation).
+Loads knowledge from JSON files and provides simple keyword-based search.
+"""
+import os
 import json
-from sentence_transformers import SentenceTransformer
-import numpy as np
 from typing import List, Dict, Any
+from pathlib import Path
+
 
 class SimpleKnowledgeBase:
-    def __init__(self):
-        # 初始化嵌入模型
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+    """
+    Simple knowledge base that loads knowledge from JSON files
+    and provides keyword-based search functionality.
+    """
+    
+    def __init__(self, knowledge_base_dir: str = None):
+        """
+        Initialize the knowledge base.
         
-        # 初始化知识库数据
-        self.knowledge_data = [
-            # 课程信息
-            {
-                "text": "MAE program requires 30 credit hours including core courses in engineering fundamentals, mathematics, and specialized electives.",
-                "type": "academic_requirements",
-                "category": "curriculum"
-            },
-            {
-                "text": "Core courses include Engineering Mathematics, Engineering Design, and Engineering Ethics. Students must maintain a 3.0 GPA.",
-                "type": "academic_requirements", 
-                "category": "curriculum"
-            },
-            {
-                "text": "Students can choose from specializations in Aerospace, Automotive, Manufacturing, Robotics, and Materials Science.",
-                "type": "specialization_info",
-                "category": "curriculum"
-            },
-            
-            # 职业发展
-            {
-                "text": "MAE graduates can pursue careers in aerospace, automotive, manufacturing, robotics, and research. Internships are highly recommended.",
-                "type": "career_guidance",
-                "category": "professional_development"
-            },
-            {
-                "text": "Research opportunities are available with faculty in areas like fluid dynamics, materials science, and control systems.",
-                "type": "research_opportunities",
-                "category": "academic_advancement"
-            },
-            {
-                "text": "Industry partnerships provide internship and co-op opportunities with major engineering companies.",
-                "type": "industry_connections",
-                "category": "professional_development"
-            },
-            
-            # 常见问题
-            {
-                "text": "Students can change their specialization track after the first semester. Consult with academic advisor for course planning.",
-                "type": "academic_advice",
-                "category": "course_planning"
-            },
-            {
-                "text": "Thesis option requires 6 credit hours of research and a written thesis. Non-thesis option requires additional coursework.",
-                "type": "academic_requirements",
-                "category": "graduation_options"
-            },
-            {
-                "text": "Prerequisites for advanced courses include completion of core engineering courses and maintaining good academic standing.",
-                "type": "academic_requirements",
-                "category": "course_planning"
-            },
-            
-            # 学习技巧
-            {
-                "text": "Time management is crucial for MAE students. Use study groups, office hours, and academic resources effectively.",
-                "type": "study_advice",
-                "category": "academic_support"
-            },
-            {
-                "text": "Engineering design projects require collaboration, critical thinking, and practical application of theoretical knowledge.",
-                "type": "project_guidance",
-                "category": "academic_support"
-            },
-            {
-                "text": "Graduate school preparation includes research experience, strong GPA, and relevant coursework in chosen specialization.",
-                "type": "graduate_preparation",
-                "category": "academic_advancement"
-            }
-        ]
+        Args:
+            knowledge_base_dir: Directory containing knowledge JSON files.
+                               Defaults to 'knowledge_base' in the same directory.
+        """
+        if knowledge_base_dir is None:
+            # Get the directory of this file
+            current_dir = Path(__file__).parent
+            knowledge_base_dir = current_dir / "knowledge_base"
+        else:
+            knowledge_base_dir = Path(knowledge_base_dir)
         
-        # 预计算所有文档的嵌入向量
-        self._compute_embeddings()
+        self.knowledge_base_dir = knowledge_base_dir
+        self.training_knowledge = []
+        self.faq_knowledge = []
+        self.uf_mae_knowledge = []  # UF MAE website knowledge
+        self.scenario_knowledge = {}
+        
+        # Load knowledge files
+        self._load_knowledge()
     
-    def _compute_embeddings(self):
-        """预计算所有文档的嵌入向量"""
+    def _load_knowledge(self):
+        """Load all knowledge files from the knowledge base directory."""
         try:
-            self.embeddings = []
-            for item in self.knowledge_data:
-                embedding = self.embedder.encode(item['text'])
-                self.embeddings.append(embedding)
-            self.embeddings = np.array(self.embeddings)
+            # Load training knowledge
+            training_file = self.knowledge_base_dir / "training_knowledge.json"
+            if training_file.exists():
+                with open(training_file, 'r', encoding='utf-8') as f:
+                    self.training_knowledge = json.load(f)
+            
+            # Load FAQ knowledge
+            faq_file = self.knowledge_base_dir / "faq_knowledge.json"
+            if faq_file.exists():
+                with open(faq_file, 'r', encoding='utf-8') as f:
+                    self.faq_knowledge = json.load(f)
+            
+            # Load UF MAE website knowledge
+            uf_mae_file = self.knowledge_base_dir / "uf_mae_website_knowledge.json"
+            if uf_mae_file.exists():
+                with open(uf_mae_file, 'r', encoding='utf-8') as f:
+                    self.uf_mae_knowledge = json.load(f)
+            
+            # Load scenario knowledge
+            scenario_file = self.knowledge_base_dir / "scenario_knowledge.json"
+            if scenario_file.exists():
+                with open(scenario_file, 'r', encoding='utf-8') as f:
+                    self.scenario_knowledge = json.load(f)
+        
         except Exception as e:
-            print(f"Error computing embeddings: {str(e)}")
-            # 如果嵌入失败，使用空列表
-            self.embeddings = []
+            print(f"⚠️ Warning: Failed to load some knowledge files: {e}")
+            # Continue with empty knowledge bases
     
-    def search(self, query: str, n_results: int = 3) -> List[str]:
-        """搜索相关知识"""
-        try:
-            if len(self.embeddings) == 0:
-                return []
+    def search(self, query: str, max_results: int = 5) -> List[str]:
+        """
+        Search the knowledge base for relevant content.
+        
+        Args:
+            query: Search query string
+            max_results: Maximum number of results to return
             
-            # 计算查询的嵌入向量
-            query_embedding = self.embedder.encode(query)
-            
-            # 计算余弦相似度
-            similarities = np.dot(self.embeddings, query_embedding) / (
-                np.linalg.norm(self.embeddings, axis=1) * np.linalg.norm(query_embedding)
-            )
-            
-            # 获取最相似的文档
-            top_indices = np.argsort(similarities)[-n_results:][::-1]
-            
-            # 返回相关文档
-            results = []
-            for idx in top_indices:
-                if similarities[idx] > 0.3:  # 相似度阈值
-                    results.append(self.knowledge_data[idx]['text'])
-            
-            return results
-            
-        except Exception as e:
-            print(f"Knowledge base search error: {str(e)}")
+        Returns:
+            List of relevant content strings
+        """
+        if not query:
             return []
+        
+        query_lower = query.lower()
+        results = []
+        seen_content = set()  # Avoid duplicates
+        
+        # Search in training knowledge
+        for item in self.training_knowledge:
+            title = item.get("title", "").lower()
+            content = item.get("content", "")
+            
+            # Simple keyword matching
+            if any(keyword in title or keyword in content.lower() 
+                   for keyword in query_lower.split() if len(keyword) > 2):
+                if content and content not in seen_content:
+                    results.append(content)
+                    seen_content.add(content)
+                    if len(results) >= max_results:
+                        break
+        
+        # Search in FAQ knowledge
+        if len(results) < max_results:
+            for item in self.faq_knowledge:
+                question = item.get("question", "").lower()
+                answer = item.get("answer", "")
+                
+                # Match question or answer
+                if any(keyword in question or keyword in answer.lower() 
+                       for keyword in query_lower.split() if len(keyword) > 2):
+                    # Combine question and answer for context
+                    combined = f"{item.get('question', '')}: {answer}"
+                    if combined not in seen_content:
+                        results.append(combined)
+                        seen_content.add(combined)
+                        if len(results) >= max_results:
+                            break
+        
+        # Search in scenario knowledge (flatten all scenarios)
+        if len(results) < max_results:
+            for persona, scenarios in self.scenario_knowledge.items():
+                for scenario_item in scenarios:
+                    scenario_text = scenario_item.get("scenario", "").lower()
+                    responses = scenario_item.get("responses", [])
+                    
+                    if any(keyword in scenario_text 
+                           for keyword in query_lower.split() if len(keyword) > 2):
+                        # Combine scenario and responses
+                        combined = f"{scenario_item.get('scenario', '')}: " + \
+                                  "; ".join(responses[:2])  # Take first 2 responses
+                        if combined not in seen_content:
+                            results.append(combined)
+                            seen_content.add(combined)
+                            if len(results) >= max_results:
+                                break
+                if len(results) >= max_results:
+                    break
+        
+        # If no results found, return some general knowledge
+        if not results:
+            # Return first few training knowledge items as fallback
+            for item in self.training_knowledge[:max_results]:
+                content = item.get("content", "")
+                if content:
+                    results.append(content)
+        
+        return results[:max_results]
+
+
+# For testing
+if __name__ == "__main__":
+    kb = SimpleKnowledgeBase()
+    print("Knowledge base loaded:")
+    print(f"  Training knowledge: {len(kb.training_knowledge)} items")
+    print(f"  FAQ knowledge: {len(kb.faq_knowledge)} items")
+    print(f"  UF MAE website knowledge: {len(kb.uf_mae_knowledge)} items")
+    print(f"  Scenario knowledge: {len(kb.scenario_knowledge)} personas")
     
-    def get_knowledge_by_category(self, category: str) -> List[str]:
-        """根据类别获取知识"""
-        try:
-            results = []
-            for item in self.knowledge_data:
-                if item['category'] == category:
-                    results.append(item['text'])
-            return results
-        except Exception as e:
-            print(f"Error getting knowledge by category: {str(e)}")
-            return []
-    
-    def get_knowledge_by_type(self, type_name: str) -> List[str]:
-        """根据类型获取知识"""
-        try:
-            results = []
-            for item in self.knowledge_data:
-                if item['type'] == type_name:
-                    results.append(item['text'])
-            return results
-        except Exception as e:
-            print(f"Error getting knowledge by type: {str(e)}")
-            return []
+    # Test search
+    test_query = "MAE advising student opening prompt"
+    results = kb.search(test_query)
+    print(f"\nSearch results for '{test_query}':")
+    for i, result in enumerate(results, 1):
+        print(f"  {i}. {result[:100]}...")

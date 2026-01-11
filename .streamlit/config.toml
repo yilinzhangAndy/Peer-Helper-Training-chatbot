@@ -1,8 +1,10 @@
-[server]
-port = 8501
-headless = true
-enableCORS = false
-enableXsrfProtection = false
+# Streamlit Cloud Configuration
+# This file tells Streamlit Cloud which file to run
 
-[browser]
-gatherUsageStats = false
+[server]
+# Port and other server settings are handled by Streamlit Cloud
+
+# Main entry point
+# Streamlit Cloud will automatically detect web_app_cloud_simple.py
+# But you can also explicitly set it in the Streamlit Cloud dashboard:
+# Settings -> Main file path: web_app_cloud_simple.py

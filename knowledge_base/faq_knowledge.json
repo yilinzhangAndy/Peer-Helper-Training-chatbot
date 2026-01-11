@@ -1,7 +1,7 @@
 [
   {
-    "question": "What is MAE (Master of Arts in Education)?",
-    "answer": "MAE is a Master of Arts in Education degree that focuses on advanced study of educational theory and practice.",
+    "question": "What is MAE (Mechanical and Aerospace Engineering)?",
+    "answer": "MAE is the Mechanical and Aerospace Engineering department that focuses on the design, analysis, and manufacturing of mechanical systems and aerospace vehicles, including aircraft, spacecraft, and related technologies.",
     "category": "program_overview"
   },
   {
@@ -10,13 +10,13 @@
     "category": "admissions"
   },
   {
-    "question": "How long does the MAE program take?",
-    "answer": "Usually 1-2 years, depending on whether you study full-time or part-time.",
+    "question": "How long does the MAE undergraduate program take?",
+    "answer": "Typically 4 years for a bachelor's degree, depending on course load and whether you study full-time or part-time.",
     "category": "program_duration"
   },
   {
     "question": "What jobs can I get after MAE graduation?",
-    "answer": "You can work in educational administration, curriculum development, educational research, teacher training, etc.",
+    "answer": "You can work in aerospace engineering, mechanical design, robotics, automotive engineering, manufacturing, research and development, consulting, and various engineering roles in both industry and academia.",
     "category": "career"
   },
   {
@@ -26,7 +26,7 @@
   },
   {
     "question": "What is the course structure of MAE program?",
-    "answer": "Includes core courses, specialized electives, research methods, and thesis/project.",
+    "answer": "Includes core engineering courses (statics, dynamics, thermodynamics, fluid mechanics, materials science), specialized electives in mechanical or aerospace engineering, design projects, and capstone courses.",
     "category": "curriculum"
   },
   {
@@ -35,8 +35,8 @@
     "category": "part_time"
   },
   {
-    "question": "What's the difference between MAE and MEd?",
-    "answer": "MAE focuses more on academic research, while MEd focuses more on practical application.",
+    "question": "What are the main research areas in MAE?",
+    "answer": "MAE research areas include aerodynamics, propulsion systems, structural mechanics, robotics, control systems, materials science, fluid dynamics, and space systems engineering.",
     "category": "program_comparison"
   },
   {

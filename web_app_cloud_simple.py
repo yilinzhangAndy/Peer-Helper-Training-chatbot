@@ -504,24 +504,193 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
     except Exception as e:
         return {"intent": "Understanding and Clarification", "confidence": 0.5}
 
-def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> str:
-    """使用RAG + UF LiteLLM API生成学生回复"""
+def get_smart_conversation_history(conversation_history: List[Dict], 
+                                  current_message: str,
+                                  max_messages: int = 6) -> str:
+    """
+    智能选择最相关的对话历史
+    
+    Args:
+        conversation_history: 完整对话历史
+        current_message: 当前advisor消息
+        max_messages: 最大消息数量
+    
+    Returns:
+        格式化的对话历史文本
+    """
+    if not conversation_history:
+        return ""
+    
+    # 提取当前消息的关键词
+    current_words = set(current_message.lower().split())
+    stop_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 
+                 'to', 'of', 'and', 'or', 'but', 'in', 'on', 'at', 'for', 
+                 'with', 'by', 'from', 'as', 'this', 'that', 'these', 'those',
+                 'so', 'do', 'does', 'did', 'can', 'could', 'will', 'would',
+                 'have', 'has', 'had', 'what', 'which', 'when', 'where', 'why', 'how',
+                 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'}
+    current_words = current_words - stop_words
+    
+    # 为每条历史消息评分
+    scored_messages = []
+    for msg in conversation_history:
+        msg_text = msg.get('content', '').lower()
+        msg_words = set(msg_text.split()) - stop_words
+        
+        # 计算相关性（共同关键词）
+        common_words = current_words & msg_words
+        relevance = len(common_words)
+        
+        # 问题消息加分（通常更重要）
+        if msg.get('role') == 'advisor':
+            relevance += 1
+        
+        # 最近的消息加分（时间衰减）
+        msg_index = conversation_history.index(msg)
+        recency_bonus = max(0, (len(conversation_history) - msg_index) * 0.1)
+        relevance += recency_bonus
+        
+        scored_messages.append((relevance, msg_index, msg))
+    
+    # 选择最相关的消息
+    scored_messages.sort(key=lambda x: x[0], reverse=True)
+    selected_indices = set()
+    selected_messages = []
+    
+    for relevance, msg_index, msg in scored_messages[:max_messages * 2]:  # 多选一些，然后筛选
+        if len(selected_messages) >= max_messages:
+            break
+        if msg_index not in selected_indices:
+            selected_indices.add(msg_index)
+            selected_messages.append((msg_index, msg))
+    
+    # 按时间顺序排序
+    selected_messages.sort(key=lambda x: x[0])
+    
+    # 格式化
+    context_parts = []
+    for _, msg in selected_messages:
+        role_label = "Advisor" if msg["role"] == "advisor" else "Student"
+        context_parts.append(f"{role_label}: {msg['content']}")
+    
+    return "\n".join(context_parts) if context_parts else ""
+
+def get_realtime_uf_mae_info(query_text: str, max_results: int = 3) -> str:
+    """
+    通用函数：实时搜索 UF MAE 网站获取最新信息
+    可以在任何需要时调用（开场问题、对话回复等）
+    
+    Args:
+        query_text: 查询文本（可以是 advisor 消息、学生问题等）
+        max_results: 最大结果数
+    
+    Returns:
+        搜索到的信息文本（如果没有结果则返回空字符串）
+    """
+    try:
+        from uf_mae_web_scraper import UFMAEWebScraper
+        
+        # 扩展搜索关键词：不仅限于课程，还包括研究、资源、联系方式等
+        search_keywords = [
+            # 课程相关
+            'course', 'class', 'schedule', 'semester', 'spring', 'summer', 'fall', 
+            'EML', 'what classes', 'what courses', 'taking', 'enrolled', 'curriculum',
+            # 研究相关
+            'research', 'lab', 'faculty', 'professor', 'advisor', 'mentor',
+            'robotics', 'aerospace', 'mechanical', 'space', 'energy', 'design',
+            # 资源相关
+            'resource', 'opportunity', 'internship', 'club', 'organization',
+            'funding', 'scholarship', 'financial aid', 'support',
+            # 联系相关
+            'contact', 'email', 'phone', 'office hours', 'appointment',
+            # 其他
+            'MAE', 'program', 'degree', 'graduate', 'undergraduate'
+        ]
+        
+        # 检查是否包含任何搜索关键词
+        query_lower = query_text.lower()
+        should_search = any(keyword in query_lower for keyword in search_keywords)
+        
+        if should_search:
+            scraper = UFMAEWebScraper()
+            web_results = scraper.search_website(query_text, max_results=max_results)
+            if web_results:
+                web_context = "\n".join([f"Real-time UF MAE website info: {r}" for r in web_results])
+                return web_context
+        
+        return ""
+    except Exception as e:
+        print(f"⚠️ Real-time website search failed: {e}")
+        return ""
+
+def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_api: UFNavigatorAPI, 
+                                      knowledge_base: SimpleKnowledgeBase, advisor_intent: str = None,
+                                      conversation_history: List[Dict] = None,
+                                      persona_info: Optional[Dict[str, Any]] = None,
+                                      preferred_model: Optional[str] = None) -> str:
+    """使用RAG + UF LiteLLM API生成学生回复（支持多模型fallback）"""
     try:
         # 1. 检索相关知识
         relevant_docs = knowledge_base.search(advisor_message)
         knowledge_context = "\n".join(relevant_docs) if relevant_docs else ""
         
-        # 2. 使用UF LiteLLM API生成回复
-        reply = uf_api.generate_student_reply(advisor_message, persona, knowledge_context)
+        # 1.5. 实时搜索 UF MAE 网站（通用搜索，适用于所有场景）
+        web_context = get_realtime_uf_mae_info(advisor_message, max_results=3)
+        if web_context:
+            knowledge_context = f"{knowledge_context}\n\n{web_context}" if knowledge_context else web_context
+        
+        # 2. 智能选择对话上下文（改进：选择最相关的消息，而不是固定3轮）
+        context_text = ""
+        if conversation_history:
+            context_text = get_smart_conversation_history(
+                conversation_history, 
+                advisor_message,
+                max_messages=6
+            )
+        
+        # 3. 如果有上下文，添加到 advisor_message 中
+        if context_text:
+            full_advisor_message = f"""Previous conversation:
+{context_text}
+
+Now the advisor says: {advisor_message}"""
+        else:
+            full_advisor_message = advisor_message
+        
+        # 4. 使用UF LiteLLM API生成回复（传递intent、persona_info、preferred_model用于Few-Shot和模型选择）
+        reply = uf_api.generate_student_reply(
+            advisor_message=full_advisor_message, 
+            persona=persona, 
+            knowledge_context=knowledge_context,
+            use_few_shot=True,
+            intent=advisor_intent,  # 传递intent用于Few-Shot示例选择
+            persona_info=persona_info,  # ✅ 传递persona_info
+            preferred_model=preferred_model  # ✅ 传递preferred_model
+        )
         
         if reply:
             return reply
         else:
             # Fallback到本地生成
+            error_msg = uf_api.last_error if uf_api else "Unknown error"
+            # 如果是 meta tensor 错误，提供更友好的提示（但不要每次都显示，避免刷屏）
+            if "meta tensor" in error_msg.lower() or "cannot copy out of meta tensor" in error_msg.lower():
+                # 只在第一次出现时显示，避免重复提示
+                if "uf_api_meta_tensor_warned" not in st.session_state:
+                    st.session_state.uf_api_meta_tensor_warned = True
+                    st.info("⚠️ UF API 服务器端模型加载问题，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。")
+            # 其他错误不显示，避免干扰用户体验
             return generate_student_reply_fallback(advisor_message, persona)
             
     except Exception as e:
-        st.warning(f"RAG + UF LiteLLM API失败: {str(e)}")
+        error_msg = str(e)
+        # 检查是否是 meta tensor 错误
+        if "meta tensor" in error_msg.lower() or "cannot copy out of meta tensor" in error_msg.lower():
+            # 只在第一次出现时显示
+            if "uf_api_meta_tensor_warned" not in st.session_state:
+                st.session_state.uf_api_meta_tensor_warned = True
+                st.info("⚠️ UF API 服务器端模型加载错误，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。")
+        # 其他错误静默处理，避免干扰
         return generate_student_reply_fallback(advisor_message, persona)
 
 # Google Sheets logging functionality
@@ -565,50 +734,64 @@ def export_session_data() -> Dict[str, Any]:
     
     return export_data
 
-def generate_student_opening_with_uf(persona: str, uf_api: UFNavigatorAPI, knowledge_base: SimpleKnowledgeBase) -> Optional[str]:
-    """Use UF LiteLLM + RAG to synthesize a persona-consistent opening question (1–2 sentences)."""
+def generate_student_opening_with_uf(
+    persona: str,
+    uf_api: UFNavigatorAPI,
+    knowledge_base: SimpleKnowledgeBase,
+    preferred_model: str = None
+) -> Optional[str]:
+    """Use UF LiteLLM + RAG to synthesize a persona-consistent opening message (with model fallback)."""
     try:
-        if not uf_api:
+        if not uf_api or not uf_api.client:
             return None
-        # Build persona profile context
+
         persona_data = STUDENT_PERSONAS.get(persona, {})
         traits = ", ".join(persona_data.get("traits", []))
         help_seeking = persona_data.get("help_seeking_behavior", "")
         description = persona_data.get("description", "")
 
-        # Retrieve top knowledge
-        kb_texts = []
-        if knowledge_base:
-            kb_texts = knowledge_base.search("MAE advising student opening prompt") or []
-        knowledge_context = "\n".join(kb_texts)
+        kb_texts = knowledge_base.search("MAE advising student opening prompt") if knowledge_base else []
+        knowledge_context = "\n".join(kb_texts or [])
+        
+        # 实时搜索 UF MAE 网站获取最新信息（用于生成更真实的开场问题）
+        # 搜索通用的 MAE 相关信息，让学生开场问题可以提到真实的课程、研究等
+        web_context = get_realtime_uf_mae_info("MAE courses research opportunities spring", max_results=2)
+        if web_context:
+            knowledge_context = f"{knowledge_context}\n{web_context}" if knowledge_context else web_context
 
-        # Prompt the model
-        system_msg = "You craft realistic first-turn student openings for a peer advising conversation. Always respond in English with 1–2 sentences."
-        user_prompt = f"""
-        Persona description: {description}
-        Traits: {traits}
-        Help-seeking behavior: {help_seeking}
-        MAE knowledge (optional):\n{knowledge_context}
+        system_msg = {
+            "role": "system",
+            "content": "You craft realistic first-turn student openings for a peer advising conversation. Always respond in English with 1–2 sentences."
+        }
+        user_msg = {
+            "role": "user",
+            "content": f"""
+Persona description: {description}
+Traits: {traits}
+Help-seeking behavior: {help_seeking}
+MAE knowledge (optional):
+{knowledge_context}
 
-        Task: Write a natural, authentic opening message the student would say to a peer advisor. It should reflect the persona's confidence level and help-seeking style, mention a concrete topic (e.g., research, internships, clubs, specialization, confidence), and avoid clichés. Keep it 1–2 sentences.
-        """
+Task: Write a natural, authentic opening message the student would say to a peer advisor.
+It should reflect the persona's confidence level and help-seeking style, mention a concrete topic
+(e.g., research, internships, clubs, specialization, confidence), avoid clichés, and be 1–2 sentences.
+"""
+        }
 
-        response = uf_api.client.chat.completions.create(
-            model="llama-3.1-8b-instruct",
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": user_prompt}
-            ],
-            max_tokens=120,
-            temperature=0.8,
-            top_p=0.95
+        # ✅ 用 UFNavigatorAPI 的"多模型 fallback"机制：借用 generate_student_reply 的模型选择逻辑
+        opening = uf_api.generate_student_reply(
+            advisor_message=user_msg["content"],
+            persona=persona,
+            knowledge_context=knowledge_context,
+            use_few_shot=False,
+            intent=None,
+            persona_info=persona_data,
+            preferred_model=preferred_model,
         )
-        text = response.choices[0].message.content.strip()
-        # Basic safety: ensure ends with sentence punctuation
-        if len(text) < 20:
-            return None
-        return text
-    except Exception:
+        return opening
+
+    except Exception as e:
+        # 出错就让上层走本地 fallback opening
         return None
 
 def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
@@ -930,7 +1113,25 @@ def generate_student_reply(context: str, persona: str, advisor_intent: str) -> s
     
     return random.choice(responses.get(persona, responses["alpha"]))
 
+def init_session_state():
+    """初始化 session_state（使用 setdefault 更安全）"""
+    st.session_state.setdefault("messages", [])
+    st.session_state.setdefault("student_intents", [])
+    st.session_state.setdefault("advisor_intents", [])
+    st.session_state.setdefault("selected_persona", "alpha")
+    st.session_state.setdefault("allow_logging", False)
+    st.session_state.setdefault("session_id", str(uuid.uuid4())[:8])
+    st.session_state.setdefault("show_training", False)
+    # ✅ 关键：控制输入框动态 key
+    st.session_state.setdefault("advisor_box_id", 0)
+    # ✅ 关键：存储 API 和知识库（避免每次 rerun 重新初始化）
+    # 注意：不要在这里设置为 None，让初始化逻辑在 main() 中处理
+
 def main():
+    # ===== 关键修复1：session_state 初始化必须在最开头（任何使用之前） =====
+    # Initialize session state FIRST - before any other code that might access it
+    init_session_state()
+    
     # Header
     st.markdown('<h1 class="main-header">🎓 Peer Helper Training Chatbot</h1>', unsafe_allow_html=True)
     st.markdown('<div class="cloud-badge">☁️ Cloud Version - Free & Global Access</div>', unsafe_allow_html=True)
@@ -952,30 +1153,186 @@ def main():
     # Load components
     with st.spinner("Loading AI components..."):
         intent_classifier = SimpleIntentClassifier()
-        
-        # Initialize UF LiteLLM API and Knowledge Base
-        try:
-            uf_api = UFNavigatorAPI()
-            knowledge_base = SimpleKnowledgeBase()
-            
-            # Test UF LiteLLM API connection
-            success, message = uf_api.test_connection()
-            if success:
-                st.success("✅ UF LiteLLM API connected successfully!")
-            else:
-                st.warning(f"⚠️ UF LiteLLM API connection failed: {message}")
-                st.info("🔄 Using fallback responses for student replies")
-                uf_api = None
-                knowledge_base = None
-        except Exception as e:
-            st.warning(f"⚠️ Failed to initialize UF LiteLLM API: {str(e)}")
+
+        # 初始化一次：不要在启动阶段 test_connection / chat
+        if "uf_api" not in st.session_state or st.session_state.uf_api is None:
+            st.session_state.uf_api = UFNavigatorAPI()
+        if "knowledge_base" not in st.session_state or st.session_state.knowledge_base is None:
+            st.session_state.knowledge_base = SimpleKnowledgeBase()
+
+        uf_api = st.session_state.uf_api
+        knowledge_base = st.session_state.knowledge_base
+
+        # 只显示本地状态（不触发任何远端调用）
+        # 统一错误处理逻辑：优先显示配置错误，然后是运行时错误
+        if not uf_api:
+            st.warning("⚠️ **UF LiteLLM API 未初始化**")
             st.info("🔄 Using fallback responses for student replies")
-            uf_api = None
-            knowledge_base = None
-    
-    # Initialize show_training state
-    if "show_training" not in st.session_state:
-        st.session_state.show_training = False
+        elif not uf_api.client:
+            # Client 未创建，检查原因
+            error_msg = uf_api.last_error if uf_api else ""
+            
+            # 优先检查是否是配置问题（API key 或 base URL 未提供）
+            if "not provided" in error_msg.lower() or "api key not provided" in error_msg.lower() or "base url not provided" in error_msg.lower():
+                st.warning("⚠️ **UF LiteLLM API 未配置**")
+                with st.expander("📖 如何配置 API（点击展开）", expanded=False):
+                    st.markdown("""
+                    **配置方法：**
+                    
+                    1. **使用 Streamlit Secrets（推荐）**
+                       - 创建文件 `.streamlit/secrets.toml`
+                       - 添加以下内容：
+                       ```toml
+                       UF_LITELLM_BASE_URL = "https://api.ai.it.ufl.edu"
+                       UF_LITELLM_API_KEY = "your-api-key-here"
+                       ```
+                       - 重启应用
+                    
+                    2. **使用环境变量**
+                       ```bash
+                       export UF_LITELLM_BASE_URL="https://api.ai.it.ufl.edu"
+                       export UF_LITELLM_API_KEY="your-api-key-here"
+                       ```
+                    
+                    **详细说明：** 查看 `API_CONFIGURATION.md` 文件
+                    
+                    **注意：** 即使未配置 API，应用仍可正常工作（使用本地 fallback 响应）
+                    """)
+            # 检查是否是 meta tensor 错误（服务器端问题）
+            elif "meta tensor" in error_msg.lower() or "cannot copy out of meta tensor" in error_msg.lower():
+                st.warning("⚠️ **UF LiteLLM API 服务器端模型加载错误**")
+                st.info(
+                    "**问题说明：** 这是 UF LiteLLM API 服务器端的问题，不是您的代码问题。\n\n"
+                    "**可能原因：**\n"
+                    "- 服务器正在初始化或重新加载模型\n"
+                    "- 服务器端 PyTorch 模型加载配置问题\n"
+                    "- 服务器资源不足\n\n"
+                    "**解决方案：**\n"
+                    "- 等待几分钟后重试\n"
+                    "- 系统会自动使用 fallback 响应\n"
+                    "- 如果问题持续，请联系 UF IT 部门\n\n"
+                    f"**技术错误：** {error_msg[:200]}"
+                )
+            # 其他错误
+            else:
+                st.warning("⚠️ **UF LiteLLM API 初始化失败**")
+                if error_msg:
+                    st.caption(f"错误详情: {error_msg[:200]}")
+            
+            st.info("🔄 Using fallback responses for student replies")
+        else:
+            # Client 已创建，检查是否有运行时错误
+            if uf_api.last_error and ("meta tensor" in uf_api.last_error.lower() or "cannot copy out of meta tensor" in uf_api.last_error.lower()):
+                # 只在第一次显示，避免重复
+                if "uf_api_runtime_error_shown" not in st.session_state:
+                    st.session_state.uf_api_runtime_error_shown = True
+                    st.info("ℹ️ 注意：检测到服务器端模型加载问题，系统将自动使用 fallback 机制。")
+                st.success("✅ UF LiteLLM client initialized (API will be used on demand, fallback enabled).")
+            else:
+                st.success("✅ UF LiteLLM client initialized (API will be used on demand).")
+        
+        # Debug: 添加 Secrets 检查按钮（在 sidebar）
+        with st.sidebar:
+            st.markdown("---")
+            if st.button("🔍 检查 Secrets 配置", help="检查 Streamlit Secrets 是否正确配置"):
+                st.write("### Secrets 配置检查")
+                try:
+                    # 检查 Streamlit secrets
+                    base_url_secret = st.secrets.get("UF_LITELLM_BASE_URL", "❌ 未找到")
+                    api_key_secret = st.secrets.get("UF_LITELLM_API_KEY", "❌ 未找到")
+                    
+                    st.write("**从 Streamlit Secrets 读取：**")
+                    st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_secret if base_url_secret != '❌ 未找到' else '❌ 未找到'}")
+                    st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_secret != '❌ 未找到' else '❌ 未找到'}")
+                    
+                    # 检查环境变量（作为备用）
+                    import os
+                    base_url_env = os.getenv("UF_LITELLM_BASE_URL", "未设置")
+                    api_key_env = os.getenv("UF_LITELLM_API_KEY", "未设置")
+                    
+                    st.write("**从环境变量读取（备用）：**")
+                    st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_env}")
+                    st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_env != '未设置' else '❌ 未设置'}")
+                    
+                    # 检查实际使用的值
+                    st.write("**实际使用的配置：**")
+                    st.write(f"- Base URL: {uf_api.base_url if uf_api else 'N/A'}")
+                    st.write(f"- API Key: {'✅ 已设置' if (uf_api and uf_api.api_key) else '❌ 未设置'}")
+                    st.write(f"- Client 状态: {'✅ 已创建' if (uf_api and uf_api.client) else '❌ 未创建'}")
+                    
+                    if uf_api and uf_api.last_error:
+                        st.warning(f"**错误信息**: {uf_api.last_error}")
+                    
+                except Exception as e:
+                    st.error(f"检查 Secrets 时出错: {e}")
+                    st.info("💡 **提示**: 如果看到 'secrets' 相关的错误，说明 Streamlit Cloud 的 Secrets 没有正确配置。")
+                    st.info("请按照 `CLOUD_SECRETS_TROUBLESHOOTING.md` 中的步骤配置 Secrets。")
+        
+        # Debug: 添加手动测试 API 按钮（在 sidebar）
+        if uf_api and uf_api.client:
+            with st.sidebar:
+                st.markdown("---")
+                if st.button("🔧 Test UF API (debug)", help="Test API connection and model loading. Step 1: models.list() (no model loading). Step 2: chat.completions (tests actual model)"):
+                    with st.spinner("Testing..."):
+                        try:
+                            st.write("**Base URL:**", uf_api.base_url)
+                            st.write("**API key present:**", bool(uf_api.api_key))
+                            
+                            if not uf_api.api_key:
+                                st.error("❌ **No API key configured!** Please set UF_LITELLM_API_KEY in Streamlit secrets.")
+                                st.stop()
+                            
+                            # 第一步：测试 models.list()（不会触发模型加载）
+                            st.write("\n**Step 1: Testing models.list()...**")
+                            st.write("*(This only tests connectivity/auth, does NOT load models)*")
+                            ms = uf_api.client.models.list()
+                            st.success(f"✅ models.list() OK, found {len(ms.data)} models")
+                            
+                            # 显示可用模型列表（前10个）
+                            if ms.data:
+                                st.write("**Available models (first 10):**")
+                                for model in ms.data[:10]:
+                                    st.write(f"  - {model.id}")
+                            
+                            # 第二步：测试最小对话（使用小模型）
+                            st.write("\n**Step 2: Testing chat.completions with llama-3.1-8b-instruct...**")
+                            st.write("*(This will trigger model loading on the server)*")
+                            model_name = "llama-3.1-8b-instruct"
+                            r = uf_api.client.chat.completions.create(
+                                model=model_name,
+                                messages=[{"role": "user", "content": "Say hi in one sentence."}],
+                                max_tokens=20,
+                                timeout=30.0
+                            )
+                            st.success("✅ chat.completions OK")
+                            st.write("**Response:**", r.choices[0].message.content)
+                            
+                            st.success("🎉 All tests passed! API is working correctly.")
+                        except Exception as e:
+                            error_msg = str(e)
+                            st.error(f"❌ UF API test failed")
+                            st.write("**Error:**", error_msg)
+                            
+                            # 判断错误类型
+                            if "meta tensor" in error_msg.lower() or "torch" in error_msg.lower():
+                                st.warning("⚠️ **Server-side model loading error**")
+                                st.write("This error occurs when UF's server tries to load a PyTorch model but fails. This is **NOT a client-side issue**.")
+                                st.info("💡 **Diagnosis:**")
+                                st.write("  - If Step 1 (models.list) passed but Step 2 failed → The model `llama-3.1-8b-instruct` is failing to load on UF's server")
+                                st.write("  - **Solution:** Contact UF IT or wait for server-side fix. You cannot fix this from your code.")
+                            elif "401" in error_msg or "403" in error_msg or "unauthorized" in error_msg.lower():
+                                st.error("⚠️ **Authentication error**")
+                                st.write("Your API key may be invalid or expired. Please check your `UF_LITELLM_API_KEY` in Streamlit secrets.")
+                            elif "404" in error_msg or "not found" in error_msg.lower():
+                                st.error("⚠️ **URL/Endpoint error**")
+                                st.write(f"Check your base_url: `{uf_api.base_url}`. The endpoint may not exist.")
+                            elif "timeout" in error_msg.lower():
+                                st.warning("⚠️ **Timeout error**")
+                                st.write("The server took too long to respond. This could indicate server overload or model loading issues.")
+                            else:
+                                st.write("**Full error traceback:**")
+                                import traceback
+                                st.code(traceback.format_exc()[:1000], language="python")
     
     # Main content area
     if not st.session_state.show_training:
@@ -985,7 +1342,7 @@ def main():
         with col2:
             if st.button("🚀 Start Training", type="primary", use_container_width=True):
                 st.session_state.show_training = True
-                st.rerun()
+                # 不需要rerun，Streamlit会自动刷新
     else:
         # Show training interface
         with st.sidebar:
@@ -1003,8 +1360,12 @@ def main():
             selected_persona = st.selectbox(
                 "Choose a student persona:",
                 personas,
-                format_func=lambda x: f"{x.upper()} - {persona_descriptions[x][:50]}..."
+                format_func=lambda x: f"{x.upper()} - {persona_descriptions[x][:50]}...",
+                index=personas.index(st.session_state.selected_persona) if st.session_state.selected_persona in personas else 0
             )
+            
+            # ===== 关键修复2：立即同步到 session_state =====
+            st.session_state.selected_persona = selected_persona
             
             # Display selected persona details
             if selected_persona:
@@ -1025,7 +1386,7 @@ def main():
                 if st.session_state.allow_logging and st.session_state.messages:
                     session_data = {
                         "session_id": st.session_state.session_id,
-                        "persona": st.session_state.get('selected_persona', 'unknown'),
+                        "persona": st.session_state.selected_persona,
                         "message_count": len(st.session_state.messages),
                         "summary": f"Conversation with {len(st.session_state.messages)} messages"
                     }
@@ -1036,151 +1397,192 @@ def main():
                 st.session_state.student_intents = []
                 st.session_state.advisor_intents = []
                 st.session_state.session_id = str(uuid.uuid4())[:8]
+                
+                # ✅ 关键：新对话输入框从 0 开始
+                st.session_state.advisor_box_id = 0
+                
+                # ✅ 可选：清掉旧的 widget state（更干净）
+                for k in list(st.session_state.keys()):
+                    if k.startswith("advisor_input_"):
+                        del st.session_state[k]
+                
                 st.rerun()
             
             if st.button("🏠 Back to Home"):
                 st.session_state.show_training = False
-                st.rerun()
+                # 不需要rerun，Streamlit会自动刷新
     
-    # Initialize session state
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        st.session_state.student_intents = []
-        st.session_state.advisor_intents = []
-        st.session_state.allow_logging = False
-        st.session_state.session_id = str(uuid.uuid4())[:8]
-    
-    # Main chat interface (only show in training mode)
+    # --- 聊天界面修正版（方案2）---
     if st.session_state.show_training:
         st.header("💬 Training Conversation")
-        
-        # Display conversation history
-        # Track student and advisor message counts separately
-        student_count = 0
-        advisor_count = 0
-        
-        for i, message in enumerate(st.session_state.messages):
-            if message["role"] == "student":
-                # Student message with intent
-                intent_info = st.session_state.student_intents[student_count] if student_count < len(st.session_state.student_intents) else {"intent": "Unknown", "confidence": 0.0}
-                intent_class = get_intent_badge_class(intent_info["intent"])
-                
+
+        # 1. 定义专门用于渲染的函数（解决乱码）
+        # 消息列表中只存纯文本，标签只在渲染时动态生成
+        def render_chat_bubble(role, content, intent_info=None):
+            if not content:
+                return
+            
+            from html import escape
+            import re
+            
+            # 清理并转义内容（防止HTML注入和乱码）
+            clean_content = re.sub(r'<[^>]+>', '', content)  # 先移除HTML标签
+            escaped_content = escape(clean_content)  # 再转义特殊字符
+            
+            # 动态生成 Intent Badge 的 HTML（转义intent名称）
+            badge_html = ""
+            if intent_info:
+                i_class = get_intent_badge_class(intent_info["intent"])
+                i_name = escape(str(intent_info["intent"]))  # 转义intent名称
+                i_conf = intent_info["confidence"]
+                badge_html = f'<div class="intent-badge {i_class}">{i_name} • {i_conf:.1%}</div>'
+
+            if role == "student":
+                # 从 session_state 读取 persona（修复作用域问题）
+                persona_display = st.session_state.selected_persona.upper()
                 st.markdown(f"""
                 <div class="chat-message student-message">
-                    <strong>👨‍🎓 Student ({selected_persona.upper()}):</strong> {message["content"]}
-                    <div class="intent-badge {intent_class}">
-                        {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
-                    </div>
+                    <strong>👨‍🎓 Student ({persona_display}):</strong> {escaped_content}
+                    {badge_html}
                 </div>
                 """, unsafe_allow_html=True)
-                
-                student_count += 1
-                
             else:
-                # Advisor message with intent
-                intent_info = st.session_state.advisor_intents[advisor_count] if advisor_count < len(st.session_state.advisor_intents) else {"intent": "Unknown", "confidence": 0.0}
-                intent_class = get_intent_badge_class(intent_info["intent"])
-                
                 st.markdown(f"""
                 <div class="chat-message advisor-message">
-                    <strong>👨‍🏫 You (Peer Advisor):</strong> {message["content"]}
-                    <div class="intent-badge {intent_class}">
-                        {intent_info["intent"]} • Confidence: {intent_info["confidence"]:.1%}
-                    </div>
+                    <strong>👨‍🏫 You (Peer Advisor):</strong> {escaped_content}
+                    {badge_html}
                 </div>
                 """, unsafe_allow_html=True)
-                
-                advisor_count += 1
-        
-        # Generate initial student message if conversation is empty
+
+        # 2. 先渲染历史消息
+        s_idx, a_idx = 0, 0
+        for msg in st.session_state.messages:
+            if msg["role"] == "student":
+                info = st.session_state.student_intents[s_idx] if s_idx < len(st.session_state.student_intents) else None
+                render_chat_bubble("student", msg["content"], info)
+                s_idx += 1
+            else:
+                info = st.session_state.advisor_intents[a_idx] if a_idx < len(st.session_state.advisor_intents) else None
+                render_chat_bubble("advisor", msg["content"], info)
+                a_idx += 1
+
+        # 3. 初始化首条消息（如果是空的）
         if not st.session_state.messages:
             if st.button("🎯 Start Conversation"):
                 with st.spinner("Student is thinking..."):
                     opening_text = None
                     if uf_api and knowledge_base:
-                        opening_text = generate_student_opening_with_uf(selected_persona, uf_api, knowledge_base)
+                        opening_text = generate_student_opening_with_uf(
+                            persona=st.session_state.selected_persona,
+                            uf_api=uf_api,
+                            knowledge_base=knowledge_base,
+                            preferred_model=st.session_state.get("preferred_model", None)
+                        )
                     if not opening_text:
-                        opening_pool = STUDENT_PERSONAS[selected_persona]["opening_questions"]
+                        opening_pool = STUDENT_PERSONAS[st.session_state.selected_persona]["opening_questions"]
                         opening_text = random.choice(opening_pool)
 
+                    # 存储数据（只存纯文本！）
                     st.session_state.messages.append({
                         "role": "student",
                         "content": opening_text,
                         "timestamp": datetime.now()
                     })
+                    st.session_state.student_intents.append(analyze_intent(opening_text, intent_classifier, "student"))
+                    st.rerun()  # 仅在第一次启动对话时刷新
 
-                    # Analyze student intent
-                    intent_result = analyze_intent(opening_text, intent_classifier, "student")
-                    st.session_state.student_intents.append(intent_result)
-
-                    st.rerun()
-        
-        # Advisor input
+        # 4. Advisor input - 动态key强制重建输入框（最稳，100%清空）
+        # ✅ 只保留这一段，确保没有其他输入框实现
         if st.session_state.messages:
-            advisor_input = st.text_area(
-                "Your response as peer advisor:",
-                height=100,
-                placeholder="Type your response here..."
-            )
-            
-            if st.button("📤 Send Response"):
-                if advisor_input.strip():
-                    # Add advisor message
-                    st.session_state.messages.append({
-                        "role": "advisor",
-                        "content": advisor_input,
-                        "timestamp": datetime.now()
-                    })
-                    
-                    # Analyze advisor intent
-                    intent_result = analyze_intent(advisor_input, intent_classifier, "advisor")
-                    st.session_state.advisor_intents.append(intent_result)
-                    
-                    # Generate student response
-                    with st.spinner("☁️ Generating student response..."):
-                        try:
-                            # Try RAG + UF LiteLLM API first
-                            if uf_api and knowledge_base:
-                                student_reply = generate_student_reply_with_rag_uf(
-                                    advisor_message=advisor_input,
-                                    persona=selected_persona,
-                                    uf_api=uf_api,
-                                    knowledge_base=knowledge_base
-                                )
-                            else:
-                                # Fallback to semantic-aware method
+            import re
+
+            # 每次用一个全新的 key，保证输入框一定是"新建的空框"
+            advisor_key = f"advisor_input_{st.session_state.advisor_box_id}"
+
+            with st.form(f"advisor_form_{st.session_state.advisor_box_id}", clear_on_submit=True):
+                advisor_input = st.text_area(
+                    "Your response as peer advisor:",
+                    placeholder="Type your response here...",
+                    height=120,
+                    key=advisor_key,
+                )
+                submitted = st.form_submit_button("📤 Send Response", use_container_width=True)
+
+            if submitted:
+                clean_input = re.sub(r"<[^>]+>", "", advisor_input or "").strip()
+
+                try:
+                    if clean_input:
+                        a_intent = analyze_intent(clean_input, intent_classifier, "advisor")
+
+                        st.session_state.messages.append({
+                            "role": "advisor",
+                            "content": clean_input,
+                            "timestamp": datetime.now()
+                        })
+                        st.session_state.advisor_intents.append(a_intent)
+
+                        with st.spinner("☁️ Student is typing..."):
+                            # ✅ 改动2：真正生成回复时才调用 API；失败只 fallback，不要 kill client
+                            uf_api = st.session_state.uf_api
+                            knowledge_base = st.session_state.knowledge_base
+                            
+                            def _is_server_loading_error(msg: str) -> bool:
+                                """判断是否是服务器端模型加载错误"""
+                                m = (msg or "").lower()
+                                return ("meta tensor" in m) or ("torch" in m)
+                            
+                            student_reply = None
+                            
+                            if uf_api and uf_api.client and knowledge_base:
+                                try:
+                                    # 这里才真正打 API
+                                    persona_info = STUDENT_PERSONAS.get(st.session_state.selected_persona, {})
+                                    preferred_model = st.session_state.get("preferred_model", None)
+                                    
+                                    student_reply = generate_student_reply_with_rag_uf(
+                                        advisor_message=clean_input,
+                                        persona=st.session_state.selected_persona,
+                                        uf_api=uf_api,
+                                        knowledge_base=knowledge_base,
+                                        advisor_intent=a_intent["intent"],
+                                        conversation_history=st.session_state.messages,
+                                        persona_info=persona_info,          # ✅ 加上
+                                        preferred_model=preferred_model     # ✅ 加上
+                                    )
+                                except Exception as e:
+                                    emsg = str(e)
+                                    if _is_server_loading_error(emsg):
+                                        st.info("ℹ️ UF LiteLLM 服务器正在加载/更新模型（server-side）。我先用 fallback 回复；稍后再试通常会恢复。")
+                                    else:
+                                        st.warning(f"⚠️ UF API call failed: {emsg[:200]}")
+                                    # 不把 uf_api 设为 None，保留客户端以便后续重试
+                            
+                            # fallback（如果 API 返回 None 或调用失败）
+                            if not student_reply:
                                 student_reply = generate_student_reply_fallback(
-                                    advisor_message=advisor_input,
-                                    persona=selected_persona
+                                    clean_input,
+                                    st.session_state.selected_persona
                                 )
-                            
-                            # Add student response
-                            st.session_state.messages.append({
-                                "role": "student",
-                                "content": student_reply,
-                                "timestamp": datetime.now()
-                            })
-                            
-                            # Analyze student intent
-                            student_intent_result = analyze_intent(student_reply, intent_classifier, "student")
-                            st.session_state.student_intents.append(student_intent_result)
-                            
-                        except Exception as e:
-                            st.error(f"Error generating student response: {str(e)}")
-                            # Add a fallback response only on error
-                            st.session_state.messages.append({
-                                "role": "student",
-                                "content": "I'm not sure how to respond to that. Could you help me understand better?",
-                                "timestamp": datetime.now()
-                            })
-                            st.session_state.student_intents.append({"intent": "Understanding and Clarification", "confidence": 0.5})
-                    
+
+                        student_reply_clean = re.sub(r"<[^>]+>", "", student_reply or "").strip()
+                        s_intent = analyze_intent(student_reply_clean, intent_classifier, "student")
+
+                        st.session_state.messages.append({
+                            "role": "student",
+                            "content": student_reply_clean,
+                            "timestamp": datetime.now()
+                        })
+                        st.session_state.student_intents.append(s_intent)
+
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+                finally:
+                    # ✅ 无论成功失败，都换 key：下一次输入框一定是空白
+                    st.session_state.advisor_box_id += 1
                     st.rerun()
-                else:
-                    st.warning("Please enter a response before sending.")
-        
-        # Session management UI disabled per request
-        
+
         # Analysis section
         if st.session_state.messages:
             st.header("Conversation Analysis")

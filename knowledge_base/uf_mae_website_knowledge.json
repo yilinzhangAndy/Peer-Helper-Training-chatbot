@@ -1,0 +1,164 @@
+[
+  {
+    "question": "What are the main research areas in UF MAE?",
+    "answer": "UF MAE has 8 main research areas: 1) Design & Manufacturing - design and manufacturing of machines and structures; 2) Energy Conversion & Storage - next-generation energy technologies; 3) Fluid Dynamics & Acoustics - study of fluid motion and sound waves; 4) MAEBio - biological topics from human body to single molecules; 5) Multiscale Modeling & Solid Mechanics - material properties and behaviors; 6) Robotics, Autonomy, Controls & Optimization - autonomous systems and control; 7) Space Research - space technology from Earth orbits to beyond; 8) Thermal Transport, Thermodynamics and Power - thermal systems and power generation.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is the Design & Manufacturing research area?",
+    "answer": "Design & Manufacturing focuses on researching and teaching how to design and manufacture real machines and structures needed for health, prosperity, and happiness. The design and manufacturing techniques developed can be applied to many industries and applications.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is the Energy Conversion & Storage research area?",
+    "answer": "Energy Conversion & Storage focuses on next-generation energy conversion and storage technologies that are key to ensuring end users have access to reliable, efficient, resilient and green energy sources.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is Fluid Dynamics & Acoustics research?",
+    "answer": "Fluid Dynamics & Acoustics is the study of how fluids (liquids, gases, and plasmas) move and interact with each other and their surroundings, including the generation and propagation of sound waves within them.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is MAEBio research?",
+    "answer": "MAEBio tackles a broad diversity of biological topics, working at length-scales as large as the human body, as small as single molecules, and at all scales in between.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is Multiscale Modeling & Solid Mechanics research?",
+    "answer": "Multiscale Modeling & Solid Mechanics specializes on multiscale modeling and experimentation spanning a broad spectrum of material properties and their behaviors at a range of spatial, temporal, and environmental conditions. Focus includes mechanical behavior of advanced materials utilizing state-of-the-art experimental and computational approaches.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is Robotics, Autonomy, Controls & Optimization research?",
+    "answer": "Robotics, Autonomy, Controls & Optimization focuses on developing systems and devices that can operate independently without human intervention. Feedback control systems use sensors to inform decisions that enable processes to achieve desired outcomes. Optimization seeks to maximize or minimize user-defined cost functions. These fields are often combined to form optimal control.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is Space Research at UF MAE?",
+    "answer": "The MAE Space Research Group pushes the bounds of space technology, from Earth orbits, past the moon and Mars, to the Sun and beyond.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is Thermal Transport, Thermodynamics and Power research?",
+    "answer": "Thermal Transport, Thermodynamics and Power are among the pillars of modern civilization that have enabled many technologies the world currently enjoys such as thermal power plants, heating/cooling systems, and engines.",
+    "category": "research_areas",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "How do I contact UF MAE department?",
+    "answer": "UF MAE Department: PO Box 116250, Gainesville FL, 32611. Phone: 352-392-0961. Graduate Student Advising: 352-294-1184 or Schedule an Appointment. Undergraduate Student Advising: 352-392-0962 or Schedule an Appointment. Website: https://mae.ufl.edu/",
+    "category": "contact",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What undergraduate resources are available in UF MAE?",
+    "answer": "UF MAE offers undergraduate students: Admissions information, Advising & Curriculum support, Computer Requirements, Forms, Integrated Product & Process Design (IPPD), Capstone Showcase, Student Organizations, Study Abroad programs, 3D Prototyping Lab, Job Opportunities, Course Schedules, and Course Syllabi.",
+    "category": "undergraduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What graduate resources are available in UF MAE?",
+    "answer": "UF MAE offers graduate students: Academic Resources, Admissions Requirements, Contact information, Degree Programs, Faculty information, Funding opportunities, Graduate Certificates, Graduate Student Council, Research Areas, and Video Gallery. There is also a PhD Spring Visit program.",
+    "category": "graduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What student organizations are available in UF MAE?",
+    "answer": "UF MAE has various Student Groups and organizations. Students can also participate in Student Design and Competition Groups. Check the MAE website for current student organizations.",
+    "category": "student_organizations",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is IPPD in UF MAE?",
+    "answer": "IPPD stands for Integrated Product & Process Design. It's an undergraduate program offered by UF MAE that focuses on product and process design integration.",
+    "category": "undergraduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is the Capstone Showcase in UF MAE?",
+    "answer": "The Capstone Showcase is an event where undergraduate students present their capstone design projects. It's part of the undergraduate program in UF MAE.",
+    "category": "undergraduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "Does UF MAE have a 3D Prototyping Lab?",
+    "answer": "Yes, UF MAE has a 3D Prototyping Lab available for undergraduate students. This lab supports design projects and prototyping activities.",
+    "category": "facilities",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What funding opportunities are available for graduate students in UF MAE?",
+    "answer": "UF MAE offers various funding opportunities for graduate students. Check the Graduate section of the MAE website for current funding options and requirements.",
+    "category": "graduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What graduate certificates are available in UF MAE?",
+    "answer": "UF MAE offers Graduate Certificates. Check the Graduate section of the MAE website for available certificate programs and requirements.",
+    "category": "graduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is the REU Program in UF MAE?",
+    "answer": "REU stands for Research Experiences for Undergraduates. UF MAE offers REU Program Information for undergraduate students interested in research opportunities.",
+    "category": "research_opportunities",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What institutes and centers are associated with UF MAE?",
+    "answer": "UF MAE is associated with various Institutes and Centers. Check the Research section of the MAE website for current institutes and centers.",
+    "category": "research",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "How can I find course schedules for UF MAE?",
+    "answer": "UF MAE provides Course Schedules for Spring, Summer, and Fall semesters. You can find them in the Quick Links section of the MAE website or in the Undergraduate/Graduate sections. There's also a myMAE portal for course information.",
+    "category": "courses",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is myMAE?",
+    "answer": "myMAE is a portal or system for MAE students to access course information, schedules, and other department resources. It's listed in the Quick Links section of the MAE website.",
+    "category": "resources",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "Are there study abroad opportunities for UF MAE students?",
+    "answer": "Yes, UF MAE offers Study Abroad programs for undergraduate students. Check the Undergraduate section of the MAE website for available study abroad opportunities.",
+    "category": "undergraduate",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What job opportunities are available for UF MAE students?",
+    "answer": "UF MAE provides Job Opportunities information for students. Check the Undergraduate section of the MAE website for current job postings and career resources.",
+    "category": "career",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "How can I schedule an appointment with a UF MAE advisor?",
+    "answer": "You can schedule an appointment with UF MAE advisors: Graduate Student Advising: 352-294-1184 or Schedule an Appointment online. Undergraduate Student Advising: 352-392-0962 or Schedule an Appointment online. Check the MAE website for the appointment scheduling system.",
+    "category": "advising",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "What is the Faculty Research Matrix in UF MAE?",
+    "answer": "The Faculty Research Matrix shows which faculty members work in which research areas. It helps students identify potential advisors and research opportunities. Check the Research section of the MAE website for the current faculty research matrix.",
+    "category": "research",
+    "source": "https://mae.ufl.edu/"
+  },
+  {
+    "question": "Are there video resources about UF MAE faculty research?",
+    "answer": "Yes, UF MAE has a Faculty Research Videos Playlist available on YouTube. You can watch faculty research videos on the MAE website or on YouTube. These videos showcase the research work of MAE faculty members.",
+    "category": "research",
+    "source": "https://mae.ufl.edu/"
+  }
+]

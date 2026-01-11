@@ -1,6 +1,6 @@
 # Peer Helper Training Chatbot
 
-A web-based training system for peer advisors to practice conversations with different types of MAE (Master of Arts in Education) students. The system uses AI-powered student personas and real-time intent classification to provide realistic training scenarios.
+A web-based training system for peer advisors to practice conversations with different types of MAE (Mechanical and Aerospace Engineering) students. The system uses AI-powered student personas and real-time intent classification to provide realistic training scenarios.
 
 ## 🌟 Features
 
@@ -10,7 +10,7 @@ A web-based training system for peer advisors to practice conversations with dif
 - **📊 Conversation Analysis**: Detailed statistics on talk-move distribution and transition patterns
 - **🌐 Cloud Deployment**: Fully deployed on Streamlit Cloud for 24/7 global access
 - **💬 Multi-turn Conversations**: Dynamic, context-aware dialogue with follow-up questions
-- **🎓 Academic Focus**: Specialized for MAE (Master of Arts in Education) peer advisor training
+- **🎓 Academic Focus**: Specialized for MAE (Mechanical and Aerospace Engineering) peer advisor training
 
 ## 🚀 Live Demo
 
@@ -222,7 +222,7 @@ This system is designed for:
 
 ## 🤝 Contributing
 
-This is a research project for MAE education. For contributions or questions:
+This is a research project for MAE (Mechanical and Aerospace Engineering) peer advisor training. For contributions or questions:
 
 1. Fork the repository
 2. Create a feature branch
@@ -231,7 +231,7 @@ This is a research project for MAE education. For contributions or questions:
 
 ## 📄 License
 
-This project is developed for academic research purposes in MAE education.
+This project is developed for academic research purposes in MAE (Mechanical and Aerospace Engineering) peer advisor training.
 
 ## 🙏 Acknowledgments
 
