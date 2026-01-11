@@ -1206,6 +1206,9 @@ def main():
         
         is_local = is_local_environment()
         
+        # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
+        _is_local_value = is_local  # 保存到局部变量，供闭包使用
+        
         # 语言切换函数：云端显示英文，本地显示中文（必须在调用之前定义）
         def get_error_message(key: str, **kwargs) -> str:
             """根据环境返回不同语言的消息"""
