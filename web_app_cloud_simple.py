@@ -789,18 +789,50 @@ def generate_student_opening_with_uf(
             "role": "system",
             "content": "You craft realistic first-turn student openings for a peer advising conversation. Always respond in English with 1–2 sentences."
         }
-        # 为 DELTA persona 添加特殊指导（不感兴趣研究、不太愿意求助）
-        delta_guidance = ""
-        if persona.lower() == "delta":
-            delta_guidance = """
+        # 为每个 persona 添加特殊指导，确保开场问题符合其特征
+        persona_guidance = ""
+        if persona.lower() == "alpha":
+            persona_guidance = """
+CRITICAL FOR ALPHA PERSONA:
+- Moderately below average confidence, but willing to ask questions
+- Interested in clubs/teams and faculty interaction, unsure about internships
+- Language: "I'm thinking about...", "I'm not sure if...", "I'm willing to learn but..."
+- Tone: Cautious but open, slightly uncertain, needs reassurance
+- Focus on: clubs, faculty interaction, research opportunities, building confidence
+- Should show: Willingness to learn, openness to help, but some self-doubt
+"""
+        elif persona.lower() == "beta":
+            persona_guidance = """
+CRITICAL FOR BETA PERSONA:
+- VERY LOW confidence and self-efficacy
+- Hesitant, embarrassed to ask for help, avoids faculty and clubs
+- Language: "I'm worried that...", "I don't know if I'm qualified...", "I'm afraid that...", "Maybe I should..."
+- Tone: Self-doubting, hesitant, apologetic, uncertain, worried about being judged
+- Focus on: Struggles, self-doubt, fear of not belonging, uncertainty about major
+- Should show: High anxiety, embarrassment, fear of judgment, low self-confidence
+- DO NOT: Sound confident, proactive, or decisive
+"""
+        elif persona.lower() == "delta":
+            persona_guidance = """
 CRITICAL FOR DELTA PERSONA:
-- DO NOT mention research or research opportunities (Delta is NOT interested in research)
-- DO NOT directly ask for help or advice (Delta is hesitant to seek help)
-- Instead: Frame questions indirectly, show hesitation, or express uncertainty without explicitly asking
-- Focus on: internships, clubs, career preparation, practical applications, job market concerns
-- Language style: More indirect, less direct questions, shows concern about others' opinions
-- Example good style: "I've been thinking about internships, but I'm not sure if I'm competitive enough..." (indirect, hesitant)
-- Example bad style: "Do you have any advice on research opportunities?" (too direct, mentions research)
+- Moderately above average confidence, but hesitant to seek help
+- NOT interested in research (DO NOT mention research)
+- Worries about others' opinions, prefers practical applications
+- Language: "I'm doing well but...", "I want to make sure...", "I'm not sure if this is the right approach..."
+- Tone: Confident but cautious, strategic, indirect
+- Focus on: internships, clubs, career preparation, practical applications, job market
+- Should show: Good confidence but hesitation to ask directly, strategic thinking
+- DO NOT: Mention research, directly ask for help
+"""
+        elif persona.lower() == "echo":
+            persona_guidance = """
+CRITICAL FOR ECHO PERSONA:
+- Very high confidence and sense of belonging
+- Proactive, asks for help freely, interested in research and internships
+- Language: "I'm excited about...", "I want to...", "I'm ready to...", "I'm confident that..."
+- Tone: Enthusiastic, confident, proactive, optimistic
+- Focus on: Research opportunities, internships, leadership, graduate school, career exploration
+- Should show: High confidence, enthusiasm, proactive attitude, clear goals
 """
         
         user_msg = {
@@ -809,16 +841,15 @@ CRITICAL FOR DELTA PERSONA:
 Persona description: {description}
 Traits: {traits}
 Help-seeking behavior: {help_seeking}
-{delta_guidance}
+{persona_guidance}
 MAE knowledge (optional):
 {knowledge_context}
 
 Task: Write a natural, authentic opening message the student would say to a peer advisor.
-It should reflect the persona's confidence level and help-seeking style, mention a concrete topic
-(e.g., internships, clubs, specialization, career preparation - but NOT research for Delta), 
-avoid clichés, and be 1–2 sentences.
+It should reflect the persona's confidence level and help-seeking style EXACTLY, mention a concrete topic
+that matches the persona's interests, avoid clichés, and be 1–2 sentences.
 
-IMPORTANT: For Delta persona, the message should be indirect and hesitant, NOT directly asking for help.
+IMPORTANT: The opening message MUST match the persona's characteristics precisely.
 """
         }
 
