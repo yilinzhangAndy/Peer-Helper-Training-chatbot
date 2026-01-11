@@ -678,7 +678,18 @@ Now the advisor says: {advisor_message}"""
                 # 只在第一次出现时显示，避免重复提示
                 if "uf_api_meta_tensor_warned" not in st.session_state:
                     st.session_state.uf_api_meta_tensor_warned = True
-                    st.info("⚠️ UF API 服务器端模型加载问题，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。")
+                    # 检测环境以显示正确语言
+                    is_local_env = (
+                        os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
+                        "streamlit" not in str(os.getenv("HOSTNAME", "")).lower()
+                    )
+                    fallback_msg = (
+                        "⚠️ UF API server-side model loading issue. Switched to local fallback response. "
+                        "System will continue using fallback until API recovers."
+                    ) if not is_local_env else (
+                        "⚠️ UF API 服务器端模型加载问题，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。"
+                    )
+                    st.info(fallback_msg)
             # 其他错误不显示，避免干扰用户体验
             return generate_student_reply_fallback(advisor_message, persona)
             
@@ -689,7 +700,18 @@ Now the advisor says: {advisor_message}"""
             # 只在第一次出现时显示
             if "uf_api_meta_tensor_warned" not in st.session_state:
                 st.session_state.uf_api_meta_tensor_warned = True
-                st.info("⚠️ UF API 服务器端模型加载错误，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。")
+                # 检测环境以显示正确语言
+                is_local_env = (
+                    os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
+                    "streamlit" not in str(os.getenv("HOSTNAME", "")).lower()
+                )
+                fallback_msg = (
+                    "⚠️ UF API server-side model loading error. Switched to local fallback response. "
+                    "System will continue using fallback until API recovers."
+                ) if not is_local_env else (
+                    "⚠️ UF API 服务器端模型加载错误，已切换到本地 fallback 响应。系统将继续使用 fallback 直到 API 恢复。"
+                )
+                st.info(fallback_msg)
         # 其他错误静默处理，避免干扰
         return generate_student_reply_fallback(advisor_message, persona)
 
