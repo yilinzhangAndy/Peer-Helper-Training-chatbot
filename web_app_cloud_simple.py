@@ -1251,45 +1251,68 @@ def main():
             else:
                 st.success("✅ UF LiteLLM client initialized (API will be used on demand).")
         
-        # Debug: 添加 Secrets 检查按钮（在 sidebar）
-        with st.sidebar:
-            st.markdown("---")
-            if st.button("🔍 检查 Secrets 配置", help="检查 Streamlit Secrets 是否正确配置"):
-                st.write("### Secrets 配置检查")
-                try:
-                    # 检查 Streamlit secrets
-                    base_url_secret = st.secrets.get("UF_LITELLM_BASE_URL", "❌ 未找到")
-                    api_key_secret = st.secrets.get("UF_LITELLM_API_KEY", "❌ 未找到")
-                    
-                    st.write("**从 Streamlit Secrets 读取：**")
-                    st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_secret if base_url_secret != '❌ 未找到' else '❌ 未找到'}")
-                    st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_secret != '❌ 未找到' else '❌ 未找到'}")
-                    
-                    # 检查环境变量（作为备用）
-                    import os
-                    base_url_env = os.getenv("UF_LITELLM_BASE_URL", "未设置")
-                    api_key_env = os.getenv("UF_LITELLM_API_KEY", "未设置")
-                    
-                    st.write("**从环境变量读取（备用）：**")
-                    st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_env}")
-                    st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_env != '未设置' else '❌ 未设置'}")
-                    
-                    # 检查实际使用的值
-                    st.write("**实际使用的配置：**")
-                    st.write(f"- Base URL: {uf_api.base_url if uf_api else 'N/A'}")
-                    st.write(f"- API Key: {'✅ 已设置' if (uf_api and uf_api.api_key) else '❌ 未设置'}")
-                    st.write(f"- Client 状态: {'✅ 已创建' if (uf_api and uf_api.client) else '❌ 未创建'}")
-                    
-                    if uf_api and uf_api.last_error:
-                        st.warning(f"**错误信息**: {uf_api.last_error}")
-                    
-                except Exception as e:
-                    st.error(f"检查 Secrets 时出错: {e}")
-                    st.info("💡 **提示**: 如果看到 'secrets' 相关的错误，说明 Streamlit Cloud 的 Secrets 没有正确配置。")
-                    st.info("请按照 `CLOUD_SECRETS_TROUBLESHOOTING.md` 中的步骤配置 Secrets。")
+        # Debug: 添加 Secrets 检查按钮（仅在本地显示，云端隐藏）
+        # 检测是否为本地环境：更可靠的方法
+        def is_local_environment():
+            """检测是否在本地环境运行（不在 Streamlit Cloud）"""
+            try:
+                # 方法 1: 检查环境变量（Streamlit Cloud 通常会设置）
+                if os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None:
+                    return False
+                # 方法 2: 检查主机名
+                import socket
+                hostname = socket.gethostname()
+                if "streamlit" in hostname.lower():
+                    return False
+                # 方法 3: 检查是否有 Streamlit Cloud 特定的配置
+                # 如果以上都不匹配，假设是本地（更安全：本地可以调试，云端隐藏）
+                return True
+            except:
+                # 如果检测失败，默认假设是云端（更安全：不显示调试功能）
+                return False
         
-        # Debug: 添加手动测试 API 按钮（在 sidebar）
-        if uf_api and uf_api.client:
+        is_local = is_local_environment()
+        
+        # 只在本地环境显示调试功能（云端隐藏，更安全）
+        if is_local:
+            with st.sidebar:
+                st.markdown("---")
+                st.caption("🔧 调试工具（仅本地）")
+                if st.button("🔍 检查 Secrets 配置", help="检查 Streamlit Secrets 是否正确配置"):
+                    st.write("### Secrets 配置检查")
+                    try:
+                        # 检查 Streamlit secrets
+                        base_url_secret = st.secrets.get("UF_LITELLM_BASE_URL", "❌ 未找到")
+                        api_key_secret = st.secrets.get("UF_LITELLM_API_KEY", "❌ 未找到")
+                        
+                        st.write("**从 Streamlit Secrets 读取：**")
+                        st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_secret if base_url_secret != '❌ 未找到' else '❌ 未找到'}")
+                        st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_secret != '❌ 未找到' else '❌ 未找到'}")
+                        
+                        # 检查环境变量（作为备用）
+                        base_url_env = os.getenv("UF_LITELLM_BASE_URL", "未设置")
+                        api_key_env = os.getenv("UF_LITELLM_API_KEY", "未设置")
+                        
+                        st.write("**从环境变量读取（备用）：**")
+                        st.write(f"- `UF_LITELLM_BASE_URL`: {base_url_env}")
+                        st.write(f"- `UF_LITELLM_API_KEY`: {'✅ 已设置' if api_key_env != '未设置' else '❌ 未设置'}")
+                        
+                        # 检查实际使用的值
+                        st.write("**实际使用的配置：**")
+                        st.write(f"- Base URL: {uf_api.base_url if uf_api else 'N/A'}")
+                        st.write(f"- API Key: {'✅ 已设置' if (uf_api and uf_api.api_key) else '❌ 未设置'}")
+                        st.write(f"- Client 状态: {'✅ 已创建' if (uf_api and uf_api.client) else '❌ 未创建'}")
+                        
+                        if uf_api and uf_api.last_error:
+                            st.warning(f"**错误信息**: {uf_api.last_error}")
+                        
+                    except Exception as e:
+                        st.error(f"检查 Secrets 时出错: {e}")
+                        st.info("💡 **提示**: 如果看到 'secrets' 相关的错误，说明 Streamlit Cloud 的 Secrets 没有正确配置。")
+                        st.info("请按照 `CLOUD_SECRETS_TROUBLESHOOTING.md` 中的步骤配置 Secrets。")
+        
+        # Debug: 添加手动测试 API 按钮（仅在本地显示，云端隐藏）
+        if is_local and uf_api and uf_api.client:
             with st.sidebar:
                 st.markdown("---")
                 if st.button("🔧 Test UF API (debug)", help="Test API connection and model loading. Step 1: models.list() (no model loading). Step 2: chat.completions (tests actual model)"):
