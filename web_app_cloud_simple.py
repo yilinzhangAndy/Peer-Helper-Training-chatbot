@@ -1189,19 +1189,48 @@ def main():
         def is_local_environment():
             """检测是否在本地环境运行（不在 Streamlit Cloud）"""
             try:
-                # 方法 1: 检查环境变量（Streamlit Cloud 通常会设置）
-                if os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None:
-                    return False
+                # 方法 1: 检查 Streamlit Cloud 特定的环境变量
+                streamlit_cloud_vars = [
+                    "STREAMLIT_SERVER_ENABLE_CORS",
+                    "STREAMLIT_SERVER_PORT",
+                    "STREAMLIT_SERVER_ADDRESS",
+                    "STREAMLIT_SERVER_HEADLESS"
+                ]
+                for var in streamlit_cloud_vars:
+                    if os.getenv(var) is not None:
+                        return False  # 在 Streamlit Cloud 上
+                
                 # 方法 2: 检查主机名
                 import socket
                 hostname = socket.gethostname()
-                if "streamlit" in hostname.lower():
+                if "streamlit" in hostname.lower() or "cloud" in hostname.lower():
                     return False
-                # 方法 3: 检查是否有 Streamlit Cloud 特定的配置
-                # 如果以上都不匹配，假设是本地（更安全：本地可以调试，云端隐藏）
-                return True
-            except:
+                
+                # 方法 3: 检查是否有 Streamlit secrets（云端通常有）
+                # 注意：本地也可能有 secrets，所以这个方法不够可靠
+                
+                # 方法 4: 检查是否在 localhost
+                # 如果访问的是 localhost，肯定是本地
+                try:
+                    import streamlit as st
+                    # 尝试获取当前 URL（如果可能）
+                    # 但 Streamlit 不直接提供这个，所以我们用其他方法
+                except:
+                    pass
+                
+                # 方法 5: 默认假设是云端（更安全：不显示调试功能）
+                # 只有在明确检测到本地特征时才返回 True
+                # 检查常见的本地环境特征
+                if os.getenv("HOME") and ("Users" in os.getenv("HOME") or "home" in os.getenv("HOME")):
+                    # 可能是本地，但还要检查其他条件
+                    # 如果没有任何 Streamlit Cloud 特征，且是用户目录，可能是本地
+                    return True
+                
+                # 默认假设是云端（更安全）
+                return False
+            except Exception as e:
                 # 如果检测失败，默认假设是云端（更安全：不显示调试功能）
+                print(f"⚠️ Environment detection error: {e}")
                 return False
         
         is_local = is_local_environment()
@@ -1399,7 +1428,13 @@ def main():
                 st.success(get_error_message("api_initialized"))
         
         # 只在本地环境显示调试功能（云端隐藏，更安全）
-        if is_local:
+        # 双重检查：确保真的是本地环境
+        is_really_local = is_local and (
+            os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
+            "streamlit" not in str(socket.gethostname()).lower()
+        )
+        
+        if is_really_local:
             with st.sidebar:
                 st.markdown("---")
                 st.caption("🔧 调试工具（仅本地）")
