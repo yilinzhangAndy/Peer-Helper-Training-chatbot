@@ -1241,21 +1241,30 @@ def main():
         is_local = is_local_environment()
         
         # 双重检查：确保真的是本地环境（更严格的检查，用于隐藏调试功能）
-        # 策略：使用最严格的方法，有任何云端特征就认为是云端
+        # 策略：使用最严格的方法，有任何云端特征就认为是云端（更安全）
         import socket
         import sys
         
-        # 检查是否是 Streamlit Cloud 的明确特征
+        # 检查是否是 Streamlit Cloud 的明确特征（使用 OR 逻辑：任何一个匹配就是云端）
         is_cloud_detected = (
             os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None or  # Cloud 环境变量
             os.getenv("STREAMLIT_CLOUD") is not None or  # Cloud 标记
             any("/mount/src/" in str(path) for path in sys.path) or  # Cloud 路径
+            any("/mount/" in str(path) for path in sys.path) or  # Cloud 路径（更宽泛）
             "streamlit" in str(socket.gethostname()).lower() or  # Cloud 主机名
-            "cloud" in str(socket.gethostname()).lower()  # Cloud 主机名
+            "cloud" in str(socket.gethostname()).lower() or  # Cloud 主机名
+            os.getenv("HOME", "") == "" or  # 没有 HOME（云端容器特征）
+            "/mount/" in os.getenv("HOME", "")  # HOME 在 /mount/ 下（云端特征）
         )
         
         # 只有在明确不是云端，且基础检测通过时，才认为是本地
+        # 默认假设是云端（更安全：不显示调试功能）
         is_really_local = is_local and not is_cloud_detected
+        
+        # 额外安全检查：如果检测不确定，强制隐藏（更安全）
+        if not is_really_local:
+            # 明确不是本地，确保隐藏
+            pass  # is_really_local 已经是 False
         
         # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
         _is_local_value = is_local  # 保存到局部变量，供闭包使用
