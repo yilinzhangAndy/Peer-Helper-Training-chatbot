@@ -1240,12 +1240,17 @@ def main():
         
         is_local = is_local_environment()
         
-        # 双重检查：确保真的是本地环境（更严格的检查）
+        # 双重检查：确保真的是本地环境（更严格的检查，用于隐藏调试功能）
         import socket
-        is_really_local = is_local and (
-            os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
-            "streamlit" not in str(socket.gethostname()).lower() and
-            "cloud" not in str(socket.gethostname()).lower()
+        import sys
+        # 多重验证：必须同时满足所有条件才认为是本地
+        is_really_local = (
+            is_local and  # 基础检测通过
+            os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and  # 没有 Cloud 环境变量
+            "streamlit" not in str(socket.gethostname()).lower() and  # 主机名不包含 streamlit
+            "cloud" not in str(socket.gethostname()).lower() and  # 主机名不包含 cloud
+            not any("/mount/src/" in str(path) for path in sys.path) and  # 不在 Cloud 路径下
+            os.getenv("STREAMLIT_CLOUD") is None  # 没有 Cloud 标记
         )
         
         # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
