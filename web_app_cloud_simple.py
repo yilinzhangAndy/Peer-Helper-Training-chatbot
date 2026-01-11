@@ -785,18 +785,36 @@ def generate_student_opening_with_uf(
             "role": "system",
             "content": "You craft realistic first-turn student openings for a peer advising conversation. Always respond in English with 1–2 sentences."
         }
+        # 为 DELTA persona 添加特殊指导（不感兴趣研究、不太愿意求助）
+        delta_guidance = ""
+        if persona.lower() == "delta":
+            delta_guidance = """
+CRITICAL FOR DELTA PERSONA:
+- DO NOT mention research or research opportunities (Delta is NOT interested in research)
+- DO NOT directly ask for help or advice (Delta is hesitant to seek help)
+- Instead: Frame questions indirectly, show hesitation, or express uncertainty without explicitly asking
+- Focus on: internships, clubs, career preparation, practical applications, job market concerns
+- Language style: More indirect, less direct questions, shows concern about others' opinions
+- Example good style: "I've been thinking about internships, but I'm not sure if I'm competitive enough..." (indirect, hesitant)
+- Example bad style: "Do you have any advice on research opportunities?" (too direct, mentions research)
+"""
+        
         user_msg = {
             "role": "user",
             "content": f"""
 Persona description: {description}
 Traits: {traits}
 Help-seeking behavior: {help_seeking}
+{delta_guidance}
 MAE knowledge (optional):
 {knowledge_context}
 
 Task: Write a natural, authentic opening message the student would say to a peer advisor.
 It should reflect the persona's confidence level and help-seeking style, mention a concrete topic
-(e.g., research, internships, clubs, specialization, confidence), avoid clichés, and be 1–2 sentences.
+(e.g., internships, clubs, specialization, career preparation - but NOT research for Delta), 
+avoid clichés, and be 1–2 sentences.
+
+IMPORTANT: For Delta persona, the message should be indirect and hesitant, NOT directly asking for help.
 """
         }
 
