@@ -1187,9 +1187,12 @@ def main():
 
         # 检测是否为本地环境：更可靠的方法（必须在 get_error_message 之前定义）
         def is_local_environment():
-            """检测是否在本地环境运行（不在 Streamlit Cloud）"""
+            """检测是否在本地环境运行（不在 Streamlit Cloud）
+            
+            策略：默认假设是云端（更安全），只有在明确检测到本地特征时才返回 True
+            """
             try:
-                # 方法 1: 检查 Streamlit Cloud 特定的环境变量
+                # 方法 1: 检查 Streamlit Cloud 特定的环境变量（最可靠）
                 streamlit_cloud_vars = [
                     "STREAMLIT_SERVER_ENABLE_CORS",
                     "STREAMLIT_SERVER_PORT",
@@ -1206,27 +1209,29 @@ def main():
                 if "streamlit" in hostname.lower() or "cloud" in hostname.lower():
                     return False
                 
-                # 方法 3: 检查是否有 Streamlit secrets（云端通常有）
-                # 注意：本地也可能有 secrets，所以这个方法不够可靠
+                # 方法 3: 检查是否在 Streamlit Cloud 的典型路径
+                # Streamlit Cloud 通常在 /mount/src/ 下
+                import sys
+                if any("/mount/src/" in str(path) for path in sys.path):
+                    return False
                 
-                # 方法 4: 检查是否在 localhost
-                # 如果访问的是 localhost，肯定是本地
-                try:
-                    import streamlit as st
-                    # 尝试获取当前 URL（如果可能）
-                    # 但 Streamlit 不直接提供这个，所以我们用其他方法
-                except:
-                    pass
+                # 方法 4: 检查 HOME 目录（本地通常有用户目录）
+                home = os.getenv("HOME", "")
+                if not home:
+                    # 没有 HOME，可能是云端容器
+                    return False
                 
-                # 方法 5: 默认假设是云端（更安全：不显示调试功能）
-                # 只有在明确检测到本地特征时才返回 True
-                # 检查常见的本地环境特征
-                if os.getenv("HOME") and ("Users" in os.getenv("HOME") or "home" in os.getenv("HOME")):
-                    # 可能是本地，但还要检查其他条件
-                    # 如果没有任何 Streamlit Cloud 特征，且是用户目录，可能是本地
+                # 方法 5: 检查是否是典型的本地开发环境
+                # 本地通常有：用户目录（/Users/ 或 /home/），且不在 /mount/ 下
+                if ("Users" in home or "/home/" in home) and "/mount/" not in home:
+                    # 可能是本地，但还要做最后的双重检查
+                    # 检查是否有明显的云端特征
+                    if os.getenv("STREAMLIT_CLOUD") is not None:
+                        return False
+                    # 如果都没有，假设是本地
                     return True
                 
-                # 默认假设是云端（更安全）
+                # 默认假设是云端（更安全：不显示调试功能）
                 return False
             except Exception as e:
                 # 如果检测失败，默认假设是云端（更安全：不显示调试功能）
