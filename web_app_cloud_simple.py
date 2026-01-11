@@ -776,8 +776,12 @@ def generate_student_opening_with_uf(
         knowledge_context = "\n".join(kb_texts or [])
         
         # 实时搜索 UF MAE 网站获取最新信息（用于生成更真实的开场问题）
-        # 搜索通用的 MAE 相关信息，让学生开场问题可以提到真实的课程、研究等
-        web_context = get_realtime_uf_mae_info("MAE courses research opportunities spring", max_results=2)
+        # 根据 persona 调整搜索关键词：DELTA 不感兴趣研究，应该搜索 internships/clubs 相关信息
+        if persona.lower() == "delta":
+            search_query = "MAE internships clubs career opportunities spring"
+        else:
+            search_query = "MAE courses research opportunities spring"
+        web_context = get_realtime_uf_mae_info(search_query, max_results=2)
         if web_context:
             knowledge_context = f"{knowledge_context}\n{web_context}" if knowledge_context else web_context
 
