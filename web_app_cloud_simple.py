@@ -1185,6 +1185,127 @@ def main():
         uf_api = st.session_state.uf_api
         knowledge_base = st.session_state.knowledge_base
 
+        # 检测是否为本地环境：更可靠的方法（必须在 get_error_message 之前定义）
+        def is_local_environment():
+            """检测是否在本地环境运行（不在 Streamlit Cloud）"""
+            try:
+                # 方法 1: 检查环境变量（Streamlit Cloud 通常会设置）
+                if os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None:
+                    return False
+                # 方法 2: 检查主机名
+                import socket
+                hostname = socket.gethostname()
+                if "streamlit" in hostname.lower():
+                    return False
+                # 方法 3: 检查是否有 Streamlit Cloud 特定的配置
+                # 如果以上都不匹配，假设是本地（更安全：本地可以调试，云端隐藏）
+                return True
+            except:
+                # 如果检测失败，默认假设是云端（更安全：不显示调试功能）
+                return False
+        
+        is_local = is_local_environment()
+        
+        # 语言切换函数：云端显示英文，本地显示中文（必须在调用之前定义）
+        def get_error_message(key: str, **kwargs) -> str:
+            """根据环境返回不同语言的消息"""
+            messages = {
+                "api_not_initialized": {
+                    "zh": "⚠️ **UF LiteLLM API 未初始化**",
+                    "en": "⚠️ **UF LiteLLM API Not Initialized**"
+                },
+                "api_not_configured": {
+                    "zh": "⚠️ **UF LiteLLM API 未配置**",
+                    "en": "⚠️ **UF LiteLLM API Not Configured**"
+                },
+                "api_init_failed": {
+                    "zh": "⚠️ **UF LiteLLM API 初始化失败**",
+                    "en": "⚠️ **UF LiteLLM API Initialization Failed**"
+                },
+                "api_server_error": {
+                    "zh": "⚠️ **UF LiteLLM API 服务器端模型加载错误**",
+                    "en": "⚠️ **UF LiteLLM API Server-Side Model Loading Error**"
+                },
+                "using_fallback": {
+                    "zh": "🔄 Using fallback responses for student replies",
+                    "en": "🔄 Using fallback responses for student replies"
+                },
+                "server_loading_issue": {
+                    "zh": "ℹ️ 注意：检测到服务器端模型加载问题，系统将自动使用 fallback 机制。",
+                    "en": "ℹ️ Server-side model loading issue detected. System will automatically use fallback mechanism."
+                },
+                "api_initialized": {
+                    "zh": "✅ UF LiteLLM client initialized (API will be used on demand).",
+                    "en": "✅ UF LiteLLM client initialized (API will be used on demand)."
+                },
+                "api_initialized_fallback": {
+                    "zh": "✅ UF LiteLLM client initialized (API will be used on demand, fallback enabled).",
+                    "en": "✅ UF LiteLLM client initialized (API will be used on demand, fallback enabled)."
+                },
+                "error_details": {
+                    "zh": "错误详情",
+                    "en": "Error Details"
+                },
+                "problem_description": {
+                    "zh": "**问题说明：** 这是 UF LiteLLM API 服务器端的问题，不是您的代码问题。",
+                    "en": "**Problem:** This is a server-side issue with UF LiteLLM API, not a problem with your code."
+                },
+                "possible_causes": {
+                    "zh": "**可能原因：**",
+                    "en": "**Possible Causes:**"
+                },
+                "server_init": {
+                    "zh": "- 服务器正在初始化或重新加载模型",
+                    "en": "- Server is initializing or reloading models"
+                },
+                "server_config": {
+                    "zh": "- 服务器端 PyTorch 模型加载配置问题",
+                    "en": "- Server-side PyTorch model loading configuration issue"
+                },
+                "server_resources": {
+                    "zh": "- 服务器资源不足",
+                    "en": "- Insufficient server resources"
+                },
+                "solutions": {
+                    "zh": "**解决方案：**",
+                    "en": "**Solutions:**"
+                },
+                "wait_retry": {
+                    "zh": "- 等待几分钟后重试",
+                    "en": "- Wait a few minutes and try again"
+                },
+                "auto_fallback": {
+                    "zh": "- 系统会自动使用 fallback 响应",
+                    "en": "- System will automatically use fallback responses"
+                },
+                "contact_it": {
+                    "zh": "- 如果问题持续，请联系 UF IT 部门",
+                    "en": "- If the problem persists, contact UF IT department"
+                },
+                "technical_error": {
+                    "zh": "**技术错误：**",
+                    "en": "**Technical Error:**"
+                },
+                "server_loading": {
+                    "zh": "ℹ️ UF LiteLLM 服务器正在加载/更新模型（server-side）。我先用 fallback 回复；稍后再试通常会恢复。",
+                    "en": "ℹ️ UF LiteLLM server is loading/updating models (server-side). Using fallback response for now; retry later usually resolves this."
+                },
+                "api_call_failed": {
+                    "zh": "⚠️ UF API 调用失败",
+                    "en": "⚠️ UF API call failed"
+                }
+            }
+            
+            # 使用闭包中捕获的 _is_local_value
+            lang = "zh" if _is_local_value else "en"
+            msg_template = messages.get(key, {}).get(lang, key)
+            
+            # 替换占位符
+            if kwargs:
+                msg_template = msg_template.format(**kwargs)
+            
+            return msg_template
+
         # 只显示本地状态（不触发任何远端调用）
         # 统一错误处理逻辑：优先显示配置错误，然后是运行时错误
         if not uf_api:
@@ -1273,118 +1394,6 @@ def main():
                 st.success(get_error_message("api_initialized_fallback"))
             else:
                 st.success(get_error_message("api_initialized"))
-        
-        # 检测是否为本地环境：更可靠的方法
-        def is_local_environment():
-            """检测是否在本地环境运行（不在 Streamlit Cloud）"""
-            try:
-                # 方法 1: 检查环境变量（Streamlit Cloud 通常会设置）
-                if os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None:
-                    return False
-                # 方法 2: 检查主机名
-                import socket
-                hostname = socket.gethostname()
-                if "streamlit" in hostname.lower():
-                    return False
-                # 方法 3: 检查是否有 Streamlit Cloud 特定的配置
-                # 如果以上都不匹配，假设是本地（更安全：本地可以调试，云端隐藏）
-                return True
-            except:
-                # 如果检测失败，默认假设是云端（更安全：不显示调试功能）
-                return False
-        
-        is_local = is_local_environment()
-        
-        # 语言切换函数：云端显示英文，本地显示中文
-        def get_error_message(key: str, **kwargs) -> str:
-            """根据环境返回不同语言的消息"""
-            messages = {
-                "api_not_initialized": {
-                    "zh": "⚠️ **UF LiteLLM API 未初始化**",
-                    "en": "⚠️ **UF LiteLLM API Not Initialized**"
-                },
-                "api_not_configured": {
-                    "zh": "⚠️ **UF LiteLLM API 未配置**",
-                    "en": "⚠️ **UF LiteLLM API Not Configured**"
-                },
-                "api_init_failed": {
-                    "zh": "⚠️ **UF LiteLLM API 初始化失败**",
-                    "en": "⚠️ **UF LiteLLM API Initialization Failed**"
-                },
-                "api_server_error": {
-                    "zh": "⚠️ **UF LiteLLM API 服务器端模型加载错误**",
-                    "en": "⚠️ **UF LiteLLM API Server-Side Model Loading Error**"
-                },
-                "using_fallback": {
-                    "zh": "🔄 Using fallback responses for student replies",
-                    "en": "🔄 Using fallback responses for student replies"
-                },
-                "server_loading_issue": {
-                    "zh": "ℹ️ 注意：检测到服务器端模型加载问题，系统将自动使用 fallback 机制。",
-                    "en": "ℹ️ Server-side model loading issue detected. System will automatically use fallback mechanism."
-                },
-                "api_initialized": {
-                    "zh": "✅ UF LiteLLM client initialized (API will be used on demand).",
-                    "en": "✅ UF LiteLLM client initialized (API will be used on demand)."
-                },
-                "api_initialized_fallback": {
-                    "zh": "✅ UF LiteLLM client initialized (API will be used on demand, fallback enabled).",
-                    "en": "✅ UF LiteLLM client initialized (API will be used on demand, fallback enabled)."
-                },
-                "error_details": {
-                    "zh": "错误详情",
-                    "en": "Error Details"
-                },
-                "problem_description": {
-                    "zh": "**问题说明：** 这是 UF LiteLLM API 服务器端的问题，不是您的代码问题。",
-                    "en": "**Problem:** This is a server-side issue with UF LiteLLM API, not a problem with your code."
-                },
-                "possible_causes": {
-                    "zh": "**可能原因：**",
-                    "en": "**Possible Causes:**"
-                },
-                "server_init": {
-                    "zh": "- 服务器正在初始化或重新加载模型",
-                    "en": "- Server is initializing or reloading models"
-                },
-                "server_config": {
-                    "zh": "- 服务器端 PyTorch 模型加载配置问题",
-                    "en": "- Server-side PyTorch model loading configuration issue"
-                },
-                "server_resources": {
-                    "zh": "- 服务器资源不足",
-                    "en": "- Insufficient server resources"
-                },
-                "solutions": {
-                    "zh": "**解决方案：**",
-                    "en": "**Solutions:**"
-                },
-                "wait_retry": {
-                    "zh": "- 等待几分钟后重试",
-                    "en": "- Wait a few minutes and try again"
-                },
-                "auto_fallback": {
-                    "zh": "- 系统会自动使用 fallback 响应",
-                    "en": "- System will automatically use fallback responses"
-                },
-                "contact_it": {
-                    "zh": "- 如果问题持续，请联系 UF IT 部门",
-                    "en": "- If the problem persists, contact UF IT department"
-                },
-                "technical_error": {
-                    "zh": "**技术错误：**",
-                    "en": "**Technical Error:**"
-                }
-            }
-            
-            lang = "zh" if is_local else "en"
-            msg_template = messages.get(key, {}).get(lang, key)
-            
-            # 替换占位符
-            if kwargs:
-                msg_template = msg_template.format(**kwargs)
-            
-            return msg_template
         
         # 只在本地环境显示调试功能（云端隐藏，更安全）
         if is_local:
