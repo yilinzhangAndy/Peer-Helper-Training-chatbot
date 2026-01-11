@@ -1177,24 +1177,44 @@ def main():
                 st.warning("⚠️ **UF LiteLLM API 未配置**")
                 with st.expander("📖 如何配置 API（点击展开）", expanded=False):
                     st.markdown("""
-                    **配置方法：**
+                    **配置方法（根据部署环境选择）：**
                     
-                    1. **使用 Streamlit Secrets（推荐）**
-                       - 创建文件 `.streamlit/secrets.toml`
-                       - 添加以下内容：
+                    ### 🌐 云端部署（Streamlit Cloud）
+                    
+                    **⚠️ 重要：云端不能通过创建文件配置！**
+                    
+                    1. **访问 Streamlit Cloud Dashboard**
+                       - 打开 https://share.streamlit.io/
+                       - 登录你的 GitHub 账号
+                    
+                    2. **找到你的应用并进入 Settings**
+                       - 点击应用名称（不是 "Open app"）
+                       - 查找 "Settings" 或 "Secrets" 标签/菜单
+                       - 点击 "Edit secrets" 或 "Manage secrets"
+                    
+                    3. **在 Secrets 编辑器中添加：**
+                       ```toml
+                       UF_LITELLM_BASE_URL = "https://api.ai.it.ufl.edu"
+                       UF_LITELLM_API_KEY = "sk-FEhqmwbGafXtX9sv07rZLw"
+                       ```
+                    
+                    4. **保存并等待自动重新部署**（1-3分钟）
+                    
+                    **详细步骤：** 查看 `QUICK_SECRETS_FIX.md` 或 `STREAMLIT_CLOUD_SECRETS_STEP_BY_STEP.md`
+                    
+                    ---
+                    
+                    ### 💻 本地开发
+                    
+                    1. **创建文件 `.streamlit/secrets.toml`**
                        ```toml
                        UF_LITELLM_BASE_URL = "https://api.ai.it.ufl.edu"
                        UF_LITELLM_API_KEY = "your-api-key-here"
                        ```
-                       - 重启应用
                     
-                    2. **使用环境变量**
-                       ```bash
-                       export UF_LITELLM_BASE_URL="https://api.ai.it.ufl.edu"
-                       export UF_LITELLM_API_KEY="your-api-key-here"
-                       ```
+                    2. **重启应用**
                     
-                    **详细说明：** 查看 `API_CONFIGURATION.md` 文件
+                    ---
                     
                     **注意：** 即使未配置 API，应用仍可正常工作（使用本地 fallback 响应）
                     """)
