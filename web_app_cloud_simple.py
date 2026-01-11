@@ -1485,7 +1485,8 @@ def main():
         
         # 只在本地环境显示调试功能（云端隐藏，更安全）
         # 使用之前定义的 is_really_local（双重检查）
-        if is_really_local:
+        # 额外安全：明确检查是否为 True（防止任何意外情况）
+        if is_really_local is True:  # 明确检查是否为 True
             with st.sidebar:
                 st.markdown("---")
                 st.caption("🔧 调试工具（仅本地）")
@@ -1523,7 +1524,8 @@ def main():
                         st.info("请按照 `CLOUD_SECRETS_TROUBLESHOOTING.md` 中的步骤配置 Secrets。")
         
         # Debug: 添加手动测试 API 按钮（仅在本地显示，云端隐藏）
-        if is_really_local and uf_api and uf_api.client:
+        # 额外安全：明确检查 is_really_local 是否为 True
+        if is_really_local is True and uf_api and uf_api.client:
             with st.sidebar:
                 st.markdown("---")
                 if st.button("🔧 Test UF API (debug)", help="Test API connection and model loading. Step 1: models.list() (no model loading). Step 2: chat.completions (tests actual model)"):
