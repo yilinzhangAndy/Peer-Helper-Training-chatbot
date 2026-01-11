@@ -1235,6 +1235,14 @@ def main():
         
         is_local = is_local_environment()
         
+        # 双重检查：确保真的是本地环境（更严格的检查）
+        import socket
+        is_really_local = is_local and (
+            os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
+            "streamlit" not in str(socket.gethostname()).lower() and
+            "cloud" not in str(socket.gethostname()).lower()
+        )
+        
         # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
         _is_local_value = is_local  # 保存到局部变量，供闭包使用
         
@@ -1428,12 +1436,7 @@ def main():
                 st.success(get_error_message("api_initialized"))
         
         # 只在本地环境显示调试功能（云端隐藏，更安全）
-        # 双重检查：确保真的是本地环境
-        is_really_local = is_local and (
-            os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is None and
-            "streamlit" not in str(socket.gethostname()).lower()
-        )
-        
+        # 使用之前定义的 is_really_local（双重检查）
         if is_really_local:
             with st.sidebar:
                 st.markdown("---")
@@ -1472,7 +1475,7 @@ def main():
                         st.info("请按照 `CLOUD_SECRETS_TROUBLESHOOTING.md` 中的步骤配置 Secrets。")
         
         # Debug: 添加手动测试 API 按钮（仅在本地显示，云端隐藏）
-        if is_local and uf_api and uf_api.client:
+        if is_really_local and uf_api and uf_api.client:
             with st.sidebar:
                 st.markdown("---")
                 if st.button("🔧 Test UF API (debug)", help="Test API connection and model loading. Step 1: models.list() (no model loading). Step 2: chat.completions (tests actual model)"):
