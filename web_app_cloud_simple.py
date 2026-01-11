@@ -1245,7 +1245,7 @@ def main():
         import socket
         import sys
         
-        # 检查是否是 Streamlit Cloud 的明确特征（使用 OR 逻辑：任何一个匹配就是云端）
+        # 方法 1: 检查是否是 Streamlit Cloud 的明确特征（使用 OR 逻辑：任何一个匹配就是云端）
         is_cloud_detected = (
             os.getenv("STREAMLIT_SERVER_ENABLE_CORS") is not None or  # Cloud 环境变量
             os.getenv("STREAMLIT_CLOUD") is not None or  # Cloud 标记
@@ -1257,14 +1257,39 @@ def main():
             "/mount/" in os.getenv("HOME", "")  # HOME 在 /mount/ 下（云端特征）
         )
         
+        # 方法 2: 尝试使用 Streamlit 运行时信息（如果可用）
+        try:
+            import streamlit.runtime.scriptrunner.script_runner as script_runner
+            # 检查是否有 Streamlit Cloud 的运行时特征
+            # 注意：这个方法可能在不同版本中有所不同
+        except:
+            pass
+        
+        # 方法 3: 检查当前工作目录（最可靠的方法）
+        try:
+            cwd = os.getcwd()
+            if "/mount/src/" in cwd or "/mount/" in cwd:
+                is_cloud_detected = True
+        except:
+            pass
+        
+        # 方法 4: 检查 __file__ 路径（如果可用）
+        try:
+            current_file = __file__ if '__file__' in globals() else ""
+            if "/mount/src/" in current_file or "/mount/" in current_file:
+                is_cloud_detected = True
+        except:
+            pass
+        
         # 只有在明确不是云端，且基础检测通过时，才认为是本地
         # 默认假设是云端（更安全：不显示调试功能）
         is_really_local = is_local and not is_cloud_detected
         
-        # 额外安全检查：如果检测不确定，强制隐藏（更安全）
+        # 最终安全检查：如果任何检测不确定，强制隐藏（最安全）
+        # 只有在 100% 确定是本地时才显示调试工具
         if not is_really_local:
             # 明确不是本地，确保隐藏
-            pass  # is_really_local 已经是 False
+            is_really_local = False  # 强制设置为 False
         
         # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
         _is_local_value = is_local  # 保存到局部变量，供闭包使用
