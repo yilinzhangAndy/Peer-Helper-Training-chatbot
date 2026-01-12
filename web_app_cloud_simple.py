@@ -369,11 +369,45 @@ def hf_classify_via_api(text: str) -> Dict[str, Any]:
     if not token or not model_name:
         raise RuntimeError("HF token or model not configured")
     headers = {"Authorization": f"Bearer {token}"}
-    # Updated API endpoint: use router.huggingface.co instead of api-inference.huggingface.co
-    url = f"https://router.huggingface.co/models/{model_name}"
-    resp = requests.post(url, headers=headers, json={"inputs": text}, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    
+    # Try multiple API endpoints (Hugging Face has changed their API structure)
+    endpoints = [
+        f"https://api-inference.huggingface.co/models/{model_name}",
+        f"https://router.huggingface.co/models/{model_name}",
+    ]
+    
+    last_error = None
+    for url in endpoints:
+        try:
+            resp = requests.post(url, headers=headers, json={"inputs": text}, timeout=60)
+            
+            # Handle different status codes
+            if resp.status_code == 200:
+                data = resp.json()
+                break
+            elif resp.status_code == 503:
+                # Model is loading, wait and retry
+                raise RuntimeError(f"Model is loading (503). Please wait a few minutes and try again. Response: {resp.text[:200]}")
+            elif resp.status_code == 410:
+                # Endpoint deprecated, try next
+                last_error = f"Endpoint deprecated: {url}"
+                continue
+            else:
+                resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if resp.status_code in [410, 404]:
+                last_error = f"Endpoint error ({resp.status_code}): {url}"
+                continue
+            raise
+        except Exception as e:
+            last_error = str(e)
+            continue
+    else:
+        # All endpoints failed
+        raise RuntimeError(f"All API endpoints failed. Last error: {last_error}")
+    
+    if 'data' not in locals():
+        raise RuntimeError(f"Failed to get response from any endpoint. Last error: {last_error}")
 
     # Possible formats: [ {label, score}, ... ] OR [ [ {label, score}, ... ] ]
     candidates: List[Dict[str, Any]]
