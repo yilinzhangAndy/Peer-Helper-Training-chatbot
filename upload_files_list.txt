@@ -1,0 +1,15 @@
+需要上传的文件（从 checkpoint-3146/ 目录）:
+- config.json
+- model.safetensors
+- tokenizer_config.json
+- vocab.json
+- merges.txt
+- special_tokens_map.json
+
+模型位置: /Users/zhangyilin/Documents/UF/Ph.D/Chatbot/chatbot/checkpoint-3146/
+
+新模型名称: zylandy/mae-intent-classifier-v2
+
+配置更新:
+HF_MODEL = "zylandy/mae-intent-classifier-v2"
+HF_TOKEN = "your-huggingface-token"  # 从 https://huggingface.co/settings/tokens 获取
