@@ -1762,7 +1762,8 @@ def main():
                 test_url = f"https://api-inference.huggingface.co/models/{hf_model}"
                 
                 # 只在第一次或需要时测试（避免每次刷新都测试）
-                if "hf_model_tested" not in st.session_state:
+                # 如果状态是 processing，强制重新检测
+                if "hf_model_tested" not in st.session_state or st.session_state.get("hf_model_status") == "processing":
                     try:
                         # 快速测试连接（使用很短的超时）
                         resp = requests.post(
@@ -1838,8 +1839,10 @@ def main():
                     st.success(get_error_message("hf_model_initialized"))
                 elif hf_status == "loading":
                     st.info(get_error_message("hf_model_loading"))
-                elif hf_status == "processing":
-                    st.info(get_error_message("hf_model_processing"))
+                elif hf_status == "local_available":
+                    st.success(get_error_message("hf_model_local_available"))
+                elif hf_status == "local_preferred":
+                    st.info(get_error_message("hf_model_local_preferred"))
                 elif hf_status == "processing":
                     st.info(get_error_message("hf_model_processing"))
                 elif hf_status == "needs_setup":
