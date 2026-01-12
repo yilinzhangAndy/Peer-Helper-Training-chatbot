@@ -1648,11 +1648,18 @@ def main():
                             # 端点废弃，尝试新端点
                             new_url = f"https://router.huggingface.co/models/{hf_model}"
                             try:
-                                resp2 = requests.post(new_url, headers=headers, json={"inputs": "test"}, timeout=5)
-                                if resp2.status_code in [200, 503]:
-                                    st.session_state.hf_model_status = "connected" if resp2.status_code == 200 else "loading"
+                                resp2 = requests.post(new_url, headers=headers, json={"inputs": "test"}, timeout=10)
+                                if resp2.status_code == 200:
+                                    st.session_state.hf_model_status = "connected"
+                                elif resp2.status_code == 503:
+                                    st.session_state.hf_model_status = "loading"
+                                elif resp2.status_code == 404:
+                                    # 404 可能意味着需要启用 Inference API 或模型文件位置问题
+                                    st.session_state.hf_model_status = "needs_setup"
                                 else:
                                     st.session_state.hf_model_status = "fallback"
+                            except requests.exceptions.Timeout:
+                                st.session_state.hf_model_status = "loading"
                             except:
                                 st.session_state.hf_model_status = "fallback"
                             st.session_state.hf_model_tested = True
@@ -1674,6 +1681,8 @@ def main():
                     st.success(get_error_message("hf_model_initialized"))
                 elif hf_status == "loading":
                     st.info(get_error_message("hf_model_loading"))
+                elif hf_status == "needs_setup":
+                    st.info(get_error_message("hf_model_needs_setup"))
                 elif hf_status == "fallback":
                     st.info(get_error_message("hf_model_fallback"))
                 # unknown 状态不显示（避免首次加载时显示）
