@@ -23,13 +23,24 @@ zylandy/mae-intent-classifier/
 ### 需要的文件结构：
 ```
 zylandy/mae-intent-classifier/
-  ├── config.json          ← 需要在根目录
-  ├── model.safetensors    ← 需要在根目录
-  ├── tokenizer_config.json ← 需要在根目录
-  ├── vocab.json
-  ├── merges.txt
-  └── special_tokens_map.json
+  ├── config.json          ← 必需：模型配置
+  ├── model.safetensors    ← 必需：模型权重
+  ├── tokenizer_config.json ← 必需：Tokenizer 配置
+  ├── vocab.json           ← 必需：RoBERTa 词汇表
+  ├── merges.txt           ← 必需：RoBERTa BPE 合并规则
+  └── special_tokens_map.json ← 必需：特殊 token 映射
 ```
+
+**为什么需要 6 个文件？**
+
+你的模型是 **RoBERTa** 类型，需要：
+- **前 3 个文件**：模型本身（config + weights + tokenizer config）
+- **后 3 个文件**：RoBERTa Tokenizer 的数据文件
+  - `vocab.json`：词汇表（将词转换为 ID）
+  - `merges.txt`：BPE（Byte Pair Encoding）合并规则
+  - `special_tokens_map.json`：特殊 token（如 [CLS], [SEP] 等）
+
+**如果缺少后 3 个文件**，Inference API 无法正确 tokenize 输入文本，会返回错误。
 
 ## 🔧 解决方案
 
@@ -42,13 +53,15 @@ zylandy/mae-intent-classifier/
    - 选择 **Move** 或 **Delete and re-upload**
    - 将文件移动到根目录
 
-4. 需要移动的文件：
-   - `checkpoint-3146/config.json` → `config.json`
-   - `checkpoint-3146/model.safetensors` → `model.safetensors`
-   - `checkpoint-3146/tokenizer_config.json` → `tokenizer_config.json`
-   - `checkpoint-3146/vocab.json` → `vocab.json`
-   - `checkpoint-3146/merges.txt` → `merges.txt`
-   - `checkpoint-3146/special_tokens_map.json` → `special_tokens_map.json`
+4. 需要移动的文件（**6 个文件，全部必需**）：
+   - `checkpoint-3146/config.json` → `config.json` ✅ 已上传
+   - `checkpoint-3146/model.safetensors` → `model.safetensors` ✅ 已上传
+   - `checkpoint-3146/tokenizer_config.json` → `tokenizer_config.json` ✅ 已上传
+   - `checkpoint-3146/vocab.json` → `vocab.json` ⚠️ **还需要上传**
+   - `checkpoint-3146/merges.txt` → `merges.txt` ⚠️ **还需要上传**
+   - `checkpoint-3146/special_tokens_map.json` → `special_tokens_map.json` ⚠️ **还需要上传**
+
+**当前状态**：已上传 3 个核心文件，还需要上传 3 个 Tokenizer 文件。
 
 ### 方法 2: 使用 Git（如果熟悉 Git）
 
