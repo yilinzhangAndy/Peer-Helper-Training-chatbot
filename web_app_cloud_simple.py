@@ -1497,6 +1497,22 @@ def main():
                 "api_call_failed": {
                     "zh": "⚠️ UF API 调用失败",
                     "en": "⚠️ UF API call failed"
+                },
+                "hf_model_initialized": {
+                    "zh": "✅ Hugging Face 意图分类模型已连接（将按需使用）",
+                    "en": "✅ Hugging Face Intent Classification Model Connected (will be used on demand)"
+                },
+                "hf_model_not_configured": {
+                    "zh": "⚠️ Hugging Face 模型未配置。检查 Streamlit secrets: HF_MODEL / HF_TOKEN",
+                    "en": "⚠️ Hugging Face Model Not Configured. Check Streamlit secrets: HF_MODEL / HF_TOKEN"
+                },
+                "hf_model_loading": {
+                    "zh": "ℹ️ Hugging Face 模型正在加载中，首次调用可能需要等待几分钟",
+                    "en": "ℹ️ Hugging Face Model is Loading. First call may take a few minutes"
+                },
+                "hf_model_fallback": {
+                    "zh": "🔄 使用关键词分类器作为备用方案",
+                    "en": "🔄 Using keyword classifier as fallback"
                 }
             }
             
@@ -1598,6 +1614,76 @@ def main():
                 st.success(get_error_message("api_initialized_fallback"))
             else:
                 st.success(get_error_message("api_initialized"))
+        
+        # 检查 Hugging Face 模型状态
+        hf_token = _get_hf_token()
+        hf_model = _get_hf_model()
+        
+        if hf_token and hf_model:
+            # 测试 Hugging Face API 连接（轻量级测试，不加载模型）
+            try:
+                import requests
+                headers = {"Authorization": f"Bearer {hf_token}"}
+                # 使用一个简单的测试请求（不触发模型加载）
+                test_url = f"https://api-inference.huggingface.co/models/{hf_model}"
+                
+                # 只在第一次或需要时测试（避免每次刷新都测试）
+                if "hf_model_tested" not in st.session_state:
+                    try:
+                        # 快速测试连接（使用很短的超时）
+                        resp = requests.post(
+                            test_url,
+                            headers=headers,
+                            json={"inputs": "test"},
+                            timeout=5
+                        )
+                        
+                        if resp.status_code == 200:
+                            st.session_state.hf_model_status = "connected"
+                            st.session_state.hf_model_tested = True
+                        elif resp.status_code == 503:
+                            st.session_state.hf_model_status = "loading"
+                            st.session_state.hf_model_tested = True
+                        elif resp.status_code == 410:
+                            # 端点废弃，尝试新端点
+                            new_url = f"https://router.huggingface.co/models/{hf_model}"
+                            try:
+                                resp2 = requests.post(new_url, headers=headers, json={"inputs": "test"}, timeout=5)
+                                if resp2.status_code in [200, 503]:
+                                    st.session_state.hf_model_status = "connected" if resp2.status_code == 200 else "loading"
+                                else:
+                                    st.session_state.hf_model_status = "fallback"
+                            except:
+                                st.session_state.hf_model_status = "fallback"
+                            st.session_state.hf_model_tested = True
+                        else:
+                            st.session_state.hf_model_status = "fallback"
+                            st.session_state.hf_model_tested = True
+                    except requests.exceptions.Timeout:
+                        # 超时可能是模型正在加载
+                        st.session_state.hf_model_status = "loading"
+                        st.session_state.hf_model_tested = True
+                    except Exception:
+                        # 其他错误，使用 fallback
+                        st.session_state.hf_model_status = "fallback"
+                        st.session_state.hf_model_tested = True
+                
+                # 显示状态
+                hf_status = st.session_state.get("hf_model_status", "unknown")
+                if hf_status == "connected":
+                    st.success(get_error_message("hf_model_initialized"))
+                elif hf_status == "loading":
+                    st.info(get_error_message("hf_model_loading"))
+                elif hf_status == "fallback":
+                    st.info(get_error_message("hf_model_fallback"))
+                # unknown 状态不显示（避免首次加载时显示）
+                    
+            except Exception:
+                # 测试失败，静默使用 fallback（不显示错误，因为 fallback 是正常的）
+                pass
+        else:
+            # 未配置，不显示（因为 fallback 分类器始终可用）
+            pass
         
         # 只在本地环境显示调试功能（云端隐藏，更安全）
         # 使用之前定义的 is_really_local（双重检查）
