@@ -1789,24 +1789,30 @@ def main():
                                     st.session_state.hf_model_status = "loading"
                                 elif resp2.status_code == 404:
                                     # 404 可能意味着：
-                                    # 1. 模型卡片已添加，但还在处理中（等待 5-10 分钟）
-                                    # 2. 需要启用 Inference API
-                                    # 3. 模型文件位置问题
-                                    # 检查是否刚添加了模型卡片（通过检查 pipeline_tag）
+                                    # 1. 模型太大，免费 Inference API 不支持（最常见）
+                                    # 2. 模型卡片已添加，但还在处理中
+                                    # 3. 需要启用 Inference API
+                                    # 检查是否可以本地加载
                                     try:
-                                        from huggingface_hub import HfApi
-                                        hf_api = HfApi(token=hf_token)
-                                        model_info = hf_api.model_info(hf_model, token=hf_token)
-                                        pipeline_tag = getattr(model_info, 'pipeline_tag', None)
-                                        if pipeline_tag:
-                                            # 有 pipeline_tag，说明模型卡片已添加，可能还在处理
-                                            st.session_state.hf_model_status = "processing"
+                                        # 检查内存是否足够
+                                        mem_check = _check_memory_available()
+                                        if mem_check.get("available") and mem_check.get("enough"):
+                                            # 有足够内存，可以本地加载
+                                            st.session_state.hf_model_status = "local_available"
                                         else:
-                                            # 没有 pipeline_tag，需要添加模型卡片
-                                            st.session_state.hf_model_status = "needs_setup"
+                                            # 检查 pipeline_tag 判断是否还在处理
+                                            from huggingface_hub import HfApi
+                                            hf_api = HfApi(token=hf_token)
+                                            model_info = hf_api.model_info(hf_model, token=hf_token)
+                                            pipeline_tag = getattr(model_info, 'pipeline_tag', None)
+                                            if pipeline_tag:
+                                                # 有 pipeline_tag，但 API 不可用，可能是模型太大
+                                                st.session_state.hf_model_status = "local_preferred"
+                                            else:
+                                                st.session_state.hf_model_status = "needs_setup"
                                     except:
-                                        # 检查失败，假设需要设置
-                                        st.session_state.hf_model_status = "needs_setup"
+                                        # 检查失败，假设可以尝试本地加载
+                                        st.session_state.hf_model_status = "local_preferred"
                                 else:
                                     st.session_state.hf_model_status = "fallback"
                             except requests.exceptions.Timeout:
