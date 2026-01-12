@@ -1654,8 +1654,25 @@ def main():
                                 elif resp2.status_code == 503:
                                     st.session_state.hf_model_status = "loading"
                                 elif resp2.status_code == 404:
-                                    # 404 可能意味着需要启用 Inference API 或模型文件位置问题
-                                    st.session_state.hf_model_status = "needs_setup"
+                                    # 404 可能意味着：
+                                    # 1. 模型卡片已添加，但还在处理中（等待 5-10 分钟）
+                                    # 2. 需要启用 Inference API
+                                    # 3. 模型文件位置问题
+                                    # 检查是否刚添加了模型卡片（通过检查 pipeline_tag）
+                                    try:
+                                        from huggingface_hub import HfApi
+                                        hf_api = HfApi(token=hf_token)
+                                        model_info = hf_api.model_info(hf_model, token=hf_token)
+                                        pipeline_tag = getattr(model_info, 'pipeline_tag', None)
+                                        if pipeline_tag:
+                                            # 有 pipeline_tag，说明模型卡片已添加，可能还在处理
+                                            st.session_state.hf_model_status = "processing"
+                                        else:
+                                            # 没有 pipeline_tag，需要添加模型卡片
+                                            st.session_state.hf_model_status = "needs_setup"
+                                    except:
+                                        # 检查失败，假设需要设置
+                                        st.session_state.hf_model_status = "needs_setup"
                                 else:
                                     st.session_state.hf_model_status = "fallback"
                             except requests.exceptions.Timeout:
@@ -1681,6 +1698,8 @@ def main():
                     st.success(get_error_message("hf_model_initialized"))
                 elif hf_status == "loading":
                     st.info(get_error_message("hf_model_loading"))
+                elif hf_status == "processing":
+                    st.info(get_error_message("hf_model_processing"))
                 elif hf_status == "needs_setup":
                     st.info(get_error_message("hf_model_needs_setup"))
                 elif hf_status == "fallback":
