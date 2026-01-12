@@ -1700,6 +1700,8 @@ def main():
                     st.info(get_error_message("hf_model_loading"))
                 elif hf_status == "processing":
                     st.info(get_error_message("hf_model_processing"))
+                elif hf_status == "processing":
+                    st.info(get_error_message("hf_model_processing"))
                 elif hf_status == "needs_setup":
                     st.info(get_error_message("hf_model_needs_setup"))
                 elif hf_status == "fallback":
