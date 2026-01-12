@@ -534,7 +534,11 @@ def get_intent_badge_class(intent: str) -> str:
         return "intent-understanding"
 
 def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
-    """Analyze intent of a message"""
+    """Analyze intent of a message
+    
+    Returns:
+        Dict with 'intent', 'confidence', and 'method' (indicating which classifier was used)
+    """
     try:
         # Try Hugging Face API first if configured
         try:
@@ -542,16 +546,26 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
             if isinstance(hf_result.get("intent"), str):
                 return {
                     "intent": hf_result.get("intent", "Unknown"),
-                    "confidence": hf_result.get("confidence", 0.0)
+                    "confidence": hf_result.get("confidence", 0.0),
+                    "method": "hf_model"  # Indicate Hugging Face model was used
                 }
-        except Exception:
+        except Exception as e:
+            # Log error but continue to fallback
             pass
 
         # Fallback to simple keyword classifier
         result = intent_classifier.classify(text)
-        return {"intent": result.get("intent", "Unknown"), "confidence": result.get("confidence", 0.0)}
+        return {
+            "intent": result.get("intent", "Unknown"),
+            "confidence": result.get("confidence", 0.0),
+            "method": "keyword"  # Indicate keyword classifier was used
+        }
     except Exception as e:
-        return {"intent": "Understanding and Clarification", "confidence": 0.5}
+        return {
+            "intent": "Understanding and Clarification",
+            "confidence": 0.5,
+            "method": "default"
+        }
 
 def get_smart_conversation_history(conversation_history: List[Dict], 
                                   current_message: str,
