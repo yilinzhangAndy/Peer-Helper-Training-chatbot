@@ -1608,14 +1608,6 @@ def main():
                 "hf_model_fallback": {
                     "zh": "🔄 使用关键词分类器作为备用方案",
                     "en": "🔄 Using keyword classifier as fallback"
-                },
-                "hf_model_processing": {
-                    "zh": "⏳ Hugging Face 模型已上传，但 Inference API 可能不可用（模型较大或需要 Inference Endpoints）。当前使用关键词分类器。如需使用 HF 模型，请考虑使用 Inference Endpoints。",
-                    "en": "⏳ Hugging Face model uploaded, but Inference API may not be available (model too large or requires Inference Endpoints). Using keyword classifier for now. Consider using Inference Endpoints if you need HF model."
-                },
-                "hf_model_needs_setup": {
-                    "zh": "ℹ️ Hugging Face 模型已上传，但需要添加模型卡片（README.md 中添加 pipeline_tag: text-classification）。当前使用关键词分类器。",
-                    "en": "ℹ️ Hugging Face model uploaded, but needs model card (add pipeline_tag: text-classification in README.md). Using keyword classifier for now."
                 }
             }
             
