@@ -1513,6 +1513,14 @@ def main():
                 "hf_model_fallback": {
                     "zh": "🔄 使用关键词分类器作为备用方案",
                     "en": "🔄 Using keyword classifier as fallback"
+                },
+                "hf_model_processing": {
+                    "zh": "⏳ Hugging Face 模型正在处理中（所有文件已上传，等待 10-30 分钟让 Hugging Face 处理并启用 Inference API）。当前使用关键词分类器。",
+                    "en": "⏳ Hugging Face model is being processed (all files uploaded, waiting 10-30 minutes for Hugging Face to process and enable Inference API). Using keyword classifier for now."
+                },
+                "hf_model_needs_setup": {
+                    "zh": "ℹ️ Hugging Face 模型已上传，但需要添加模型卡片（README.md 中添加 pipeline_tag: text-classification）。当前使用关键词分类器。",
+                    "en": "ℹ️ Hugging Face model uploaded, but needs model card (add pipeline_tag: text-classification in README.md). Using keyword classifier for now."
                 }
             }
             
