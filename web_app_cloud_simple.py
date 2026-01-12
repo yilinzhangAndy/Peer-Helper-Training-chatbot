@@ -336,14 +336,28 @@ class SimpleIntentClassifier:
 
 # Hugging Face Inference API classifier (optional)
 def _get_hf_token() -> str:
-    # Prefer Streamlit Secrets; fallback to env
+    """
+    Get Hugging Face API token from Streamlit Secrets or environment variable.
+    
+    Configure in Streamlit Cloud Secrets or .streamlit/secrets.toml:
+    HF_TOKEN = "your-huggingface-token"
+    
+    Get your token from: https://huggingface.co/settings/tokens
+    """
     try:
         return st.secrets.get("HF_TOKEN", "")
     except Exception:
         return os.getenv("HF_TOKEN", "")
 
 def _get_hf_model() -> str:
-    # Set your model repo name via Secrets or env; e.g., "zylandy/mae-intent-classifier"
+    """
+    Get Hugging Face model name from Streamlit Secrets or environment variable.
+    
+    Configure in Streamlit Cloud Secrets or .streamlit/secrets.toml:
+    HF_MODEL = "your-username/your-model-name"
+    
+    Example: "zylandy/mae-intent-classifier"
+    """
     try:
         return st.secrets.get("HF_MODEL", "")
     except Exception:
