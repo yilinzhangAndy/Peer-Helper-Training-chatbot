@@ -369,7 +369,8 @@ def hf_classify_via_api(text: str) -> Dict[str, Any]:
     if not token or not model_name:
         raise RuntimeError("HF token or model not configured")
     headers = {"Authorization": f"Bearer {token}"}
-    url = f"https://api-inference.huggingface.co/models/{model_name}"
+    # Updated API endpoint: use router.huggingface.co instead of api-inference.huggingface.co
+    url = f"https://router.huggingface.co/models/{model_name}"
     resp = requests.post(url, headers=headers, json={"inputs": text}, timeout=30)
     resp.raise_for_status()
     data = resp.json()
