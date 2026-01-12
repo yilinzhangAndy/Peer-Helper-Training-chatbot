@@ -338,6 +338,32 @@ class SimpleIntentClassifier:
 # Global variable to cache the local model
 _hf_local_classifier = None
 
+def _check_memory_available() -> Dict[str, Any]:
+    """
+    Check if there's enough memory to load the model.
+    
+    Returns:
+        Dict with 'available', 'total', 'available_gb', 'enough' keys
+    """
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        available_gb = mem.available / (1024**3)
+        total_gb = mem.total / (1024**3)
+        # Model needs about 1-2 GB, so we need at least 2 GB available
+        enough = available_gb >= 2.0
+        return {
+            "available": True,
+            "total_gb": total_gb,
+            "available_gb": available_gb,
+            "enough": enough
+        }
+    except ImportError:
+        # psutil not available, can't check
+        return {"available": False, "enough": None}
+    except Exception as e:
+        return {"available": False, "error": str(e), "enough": None}
+
 def _load_hf_model_locally() -> Any:
     """
     Load Hugging Face model locally using transformers pipeline.
@@ -358,10 +384,19 @@ def _load_hf_model_locally() -> Any:
     if not token or not model_name:
         return None
     
+    # Check memory before loading
+    mem_check = _check_memory_available()
+    if mem_check.get("available") and mem_check.get("enough") is False:
+        print(f"⚠️ Insufficient memory: {mem_check.get('available_gb', 0):.1f} GB available, need at least 2 GB")
+        return None
+    
     try:
         from transformers import pipeline
         
         print(f"🔄 Loading model locally: {model_name}")
+        if mem_check.get("available"):
+            print(f"   Memory: {mem_check.get('available_gb', 0):.1f} GB available / {mem_check.get('total_gb', 0):.1f} GB total")
+        
         _hf_local_classifier = pipeline(
             "text-classification",
             model=model_name,
@@ -370,6 +405,10 @@ def _load_hf_model_locally() -> Any:
         )
         print(f"✅ Model loaded successfully")
         return _hf_local_classifier
+    except MemoryError as e:
+        print(f"❌ Out of memory: {e}")
+        print(f"   Model requires at least 2 GB available memory")
+        return None
     except Exception as e:
         print(f"⚠️ Local model loading failed: {e}")
         print(f"   Will fallback to API or keyword classifier")
