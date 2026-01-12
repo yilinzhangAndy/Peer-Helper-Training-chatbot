@@ -334,6 +334,83 @@ class SimpleIntentClassifier:
         
         return {"intent": intent, "confidence": confidence}
 
+# Hugging Face model classifier (local loading or API)
+# Global variable to cache the local model
+_hf_local_classifier = None
+
+def _load_hf_model_locally() -> Any:
+    """
+    Load Hugging Face model locally using transformers pipeline.
+    This is cached globally to avoid reloading on every request.
+    
+    Returns:
+        Pipeline object or None if loading fails
+    """
+    global _hf_local_classifier
+    
+    # Return cached model if already loaded
+    if _hf_local_classifier is not None:
+        return _hf_local_classifier
+    
+    token = _get_hf_token()
+    model_name = _get_hf_model()
+    
+    if not token or not model_name:
+        return None
+    
+    try:
+        from transformers import pipeline
+        
+        print(f"🔄 Loading model locally: {model_name}")
+        _hf_local_classifier = pipeline(
+            "text-classification",
+            model=model_name,
+            token=token,
+            device=-1  # Use CPU (use 0 for GPU if available)
+        )
+        print(f"✅ Model loaded successfully")
+        return _hf_local_classifier
+    except Exception as e:
+        print(f"⚠️ Local model loading failed: {e}")
+        print(f"   Will fallback to API or keyword classifier")
+        return None
+
+def hf_classify_locally(text: str) -> Dict[str, Any]:
+    """
+    Classify intent using locally loaded Hugging Face model.
+    
+    Returns:
+        Dict with 'intent', 'confidence', and 'method'
+    """
+    classifier = _load_hf_model_locally()
+    if classifier is None:
+        raise RuntimeError("Local model not available")
+    
+    try:
+        result = classifier(text)
+        
+        # Handle different response formats
+        if isinstance(result, list):
+            if result and isinstance(result[0], dict):
+                top = result[0]
+                label = top.get("label", "Understanding and Clarification")
+                score = float(top.get("score", 0.0))
+            else:
+                raise ValueError("Unexpected result format")
+        elif isinstance(result, dict):
+            label = result.get("label", "Understanding and Clarification")
+            score = float(result.get("score", 0.0))
+        else:
+            raise ValueError("Unexpected result format")
+        
+        return {
+            "intent": label,
+            "confidence": score,
+            "method": "hf_local"
+        }
+    except Exception as e:
+        raise RuntimeError(f"Local classification failed: {e}")
+
 # Hugging Face Inference API classifier (optional)
 def _get_hf_token() -> str:
     """
@@ -536,24 +613,42 @@ def get_intent_badge_class(intent: str) -> str:
 def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
     """Analyze intent of a message
     
+    Priority order:
+    1. Local Hugging Face model (if available)
+    2. Hugging Face Inference API (if available)
+    3. Keyword classifier (fallback)
+    
     Returns:
         Dict with 'intent', 'confidence', and 'method' (indicating which classifier was used)
     """
     try:
-        # Try Hugging Face API first if configured
+        # Priority 1: Try local Hugging Face model first (best accuracy, no API dependency)
         try:
-            hf_result = hf_classify_via_api(text)
-            if isinstance(hf_result.get("intent"), str):
+            hf_local_result = hf_classify_locally(text)
+            if isinstance(hf_local_result.get("intent"), str):
                 return {
-                    "intent": hf_result.get("intent", "Unknown"),
-                    "confidence": hf_result.get("confidence", 0.0),
-                    "method": "hf_model"  # Indicate Hugging Face model was used
+                    "intent": hf_local_result.get("intent", "Unknown"),
+                    "confidence": hf_local_result.get("confidence", 0.0),
+                    "method": "hf_local"  # Indicate local Hugging Face model was used
+                }
+        except Exception as e:
+            # Log error but continue to next option
+            pass
+
+        # Priority 2: Try Hugging Face Inference API if configured
+        try:
+            hf_api_result = hf_classify_via_api(text)
+            if isinstance(hf_api_result.get("intent"), str):
+                return {
+                    "intent": hf_api_result.get("intent", "Unknown"),
+                    "confidence": hf_api_result.get("confidence", 0.0),
+                    "method": "hf_api"  # Indicate Hugging Face API was used
                 }
         except Exception as e:
             # Log error but continue to fallback
             pass
 
-        # Fallback to simple keyword classifier
+        # Priority 3: Fallback to simple keyword classifier
         result = intent_classifier.classify(text)
         return {
             "intent": result.get("intent", "Unknown"),
