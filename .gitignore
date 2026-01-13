@@ -15,10 +15,26 @@ __pycache__/
 *.pyd
 .Python
 
-# Model files (too large for GitHub)
+# Model files (too large for GitHub, stored on Hugging Face)
 ../pre-train/
 models/*.bin
 models/*.safetensors
+checkpoint-*/
+*.safetensors
+*.pt
+*.bin
+*.pth
+
+# Data files (too large for Git)
+data/*.xlsx
+data/*.xlsm
+data/*.pdf
+data/*.json
+
+# Temporary upload scripts
+upload_model*.py
+push_hf_files.py
+extract_pdf_content.py
 
 # Vector database
 vector_db/
