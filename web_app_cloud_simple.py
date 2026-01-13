@@ -665,6 +665,8 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         try:
             hf_local_result = hf_classify_locally(text)
             if isinstance(hf_local_result.get("intent"), str):
+                print(f"✅ Using Hugging Face local model for intent classification")
+                print(f"   Intent: {hf_local_result.get('intent')}, Confidence: {hf_local_result.get('confidence'):.3f}")
                 return {
                     "intent": hf_local_result.get("intent", "Unknown"),
                     "confidence": hf_local_result.get("confidence", 0.0),
@@ -672,6 +674,14 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
                 }
         except Exception as e:
             # Log error but continue to next option
+            error_msg = str(e)
+            print(f"⚠️ Local model failed: {error_msg[:200]}, trying API or keyword classifier")
+            # 记录更详细的错误信息（但限制长度）
+            import traceback
+            tb = traceback.format_exc()
+            print(f"   Error type: {type(e).__name__}")
+            if "memory" in error_msg.lower() or "MemoryError" in tb:
+                print(f"   💡 This might be a memory issue")
             pass
 
         # Priority 2: Try Hugging Face Inference API if configured
@@ -685,6 +695,8 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
                 }
         except Exception as e:
             # Log error but continue to fallback
+            error_msg = str(e)
+            print(f"⚠️ HF API failed: {error_msg[:200]}, trying keyword classifier")
             pass
 
         # Priority 3: Fallback to simple keyword classifier
