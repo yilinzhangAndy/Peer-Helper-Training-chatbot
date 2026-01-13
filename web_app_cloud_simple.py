@@ -1647,20 +1647,36 @@ def main():
                     "en": "⚠️ UF API call failed"
                 },
                 "hf_model_initialized": {
-                    "zh": "✅ Hugging Face 意图分类模型已连接（将按需使用）",
-                    "en": "✅ Hugging Face Intent Classification Model Connected (will be used on demand)"
+                    "zh": "✅ Peer Helper RoBERTa 意图分类模型已连接（将按需使用）",
+                    "en": "✅ Peer Helper RoBERTa Intent Classification Model Connected (will be used on demand)"
                 },
                 "hf_model_not_configured": {
-                    "zh": "⚠️ Hugging Face 模型未配置。检查 Streamlit secrets: HF_MODEL / HF_TOKEN",
-                    "en": "⚠️ Hugging Face Model Not Configured. Check Streamlit secrets: HF_MODEL / HF_TOKEN"
+                    "zh": "⚠️ Peer Helper RoBERTa 分类模型未配置。检查 Streamlit secrets: HF_MODEL / HF_TOKEN",
+                    "en": "⚠️ Peer Helper RoBERTa Classification Model Not Configured. Check Streamlit secrets: HF_MODEL / HF_TOKEN"
                 },
                 "hf_model_loading": {
-                    "zh": "ℹ️ Hugging Face 模型正在加载中，首次调用可能需要等待几分钟",
-                    "en": "ℹ️ Hugging Face Model is Loading. First call may take a few minutes"
+                    "zh": "ℹ️ Peer Helper RoBERTa 分类模型正在加载中，首次调用可能需要等待几分钟",
+                    "en": "ℹ️ Peer Helper RoBERTa Classification Model is Loading. First call may take a few minutes"
                 },
                 "hf_model_fallback": {
                     "zh": "🔄 使用关键词分类器作为备用方案",
                     "en": "🔄 Using keyword classifier as fallback"
+                },
+                "hf_model_local_available": {
+                    "zh": "✅ Peer Helper RoBERTa 意图分类模型已就绪（本地加载）",
+                    "en": "✅ Peer Helper RoBERTa Intent Classification Model Ready (Local Loading)"
+                },
+                "hf_model_local_preferred": {
+                    "zh": "ℹ️ Peer Helper RoBERTa 分类模型可用（推荐本地加载）",
+                    "en": "ℹ️ Peer Helper RoBERTa Classification Model Available (Local Loading Preferred)"
+                },
+                "hf_model_processing": {
+                    "zh": "⏳ Peer Helper RoBERTa 分类模型正在处理中，请稍候",
+                    "en": "⏳ Peer Helper RoBERTa Classification Model is Processing. Please wait"
+                },
+                "hf_model_needs_setup": {
+                    "zh": "⚠️ Peer Helper RoBERTa 分类模型需要配置（添加模型卡片）",
+                    "en": "⚠️ Peer Helper RoBERTa Classification Model Needs Setup (Add Model Card)"
                 }
             }
             
