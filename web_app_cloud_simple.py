@@ -690,6 +690,7 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         # Priority 3: Fallback to simple keyword classifier
         result = intent_classifier.classify(text)
         print(f"🔄 Using keyword classifier for intent classification (fallback)")
+        print(f"   Intent: {result.get('intent')}, Confidence: {result.get('confidence'):.3f}")
         return {
             "intent": result.get("intent", "Unknown"),
             "confidence": result.get("confidence", 0.0),
