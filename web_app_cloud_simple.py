@@ -1556,11 +1556,16 @@ def main():
             is_really_local = False  # 强制设置为 False
         
         # 使用闭包捕获 is_local 的值，避免 UnboundLocalError
-        _is_local_value = is_local  # 保存到局部变量，供闭包使用
+        # 确保云端环境强制使用英文（即使 is_local 判断有误）
+        # 使用 is_really_local 而不是 is_local，确保云端一定是英文
+        _is_local_value = is_really_local  # 保存到局部变量，供闭包使用（云端一定是 False）
         
         # 语言切换函数：云端显示英文，本地显示中文（必须在调用之前定义）
         def get_error_message(key: str, **kwargs) -> str:
-            """根据环境返回不同语言的消息"""
+            """根据环境返回不同语言的消息
+            云端环境：强制使用英文
+            本地环境：使用中文
+            """
             messages = {
                 "api_not_initialized": {
                     "zh": "⚠️ **UF LiteLLM API 未初始化**",
