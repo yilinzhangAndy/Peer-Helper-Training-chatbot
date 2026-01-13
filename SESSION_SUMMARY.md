@@ -62,10 +62,229 @@
 - **模型加载**: transformers.pipeline（本地加载）
 
 ### 知识库内容
-- `faq_knowledge.json` - 常见问题
-- `scenario_knowledge.json` - 场景知识
-- `training_knowledge.json` - 培训知识
+- `faq_knowledge.json` - 常见问题（50 条）
+- `scenario_knowledge.json` - 场景知识（4 个角色场景）
+- `training_knowledge.json` - 培训知识（50 条）
 - `uf_mae_website_knowledge.json` - UF MAE 网站信息（27 条）
+
+---
+
+## 📚 历史重要修改记录
+
+### 1. **知识库系统创建与完善** ✅
+
+#### 知识库文件创建
+创建了 4 个知识库 JSON 文件，总计 **131 条知识条目**：
+
+**1. FAQ 知识库** (`faq_knowledge.json`) - **50 条**
+- 项目概述：MAE 专业定义、入学要求、项目时长
+- 职业发展：就业方向、职业路径
+- 学术信息：课程结构、学位要求
+- 财务援助：奖学金、助学金申请
+- 重要说明：从 "Master of Arts in Education" 更正为 "Mechanical and Aerospace Engineering"
+
+**2. 场景知识库** (`scenario_knowledge.json`) - **4 个角色场景**
+- 按 4 种学生角色（Alpha, Beta, Delta, Echo）组织
+- 每个角色包含多个典型场景和回复建议
+- 场景示例：
+  - 选择研究方向和建议导师
+  - 准备学术会议报告
+  - 提高学术写作技能
+  - 平衡学业和课外活动
+
+**3. 培训知识库** (`training_knowledge.json`) - **50 条**
+- 同伴顾问手册：基本指导原则
+- 沟通技巧：积极倾听、提供具体建议
+- 学术规划：课程选择、时间安排
+- 职业发展支持：职业路径、技能差距识别
+- 问题解决策略：常见问题处理方法
+
+**4. UF MAE 网站知识库** (`uf_mae_website_knowledge.json`) - **27 条**
+- **8 个主要研究领域**：
+  1. Design & Manufacturing（设计与制造）
+  2. Energy Conversion & Storage（能源转换与存储）
+  3. Fluid Dynamics & Acoustics（流体动力学与声学）
+  4. MAEBio（生物力学）
+  5. Multiscale Modeling & Solid Mechanics（多尺度建模与固体力学）
+  6. Robotics, Autonomy, Controls & Optimization（机器人、自主、控制与优化）
+  7. Space Research（空间研究）
+  8. Thermal Transport, Thermodynamics and Power（热传输、热力学与动力）
+- **本科生信息**：课程、学位要求、联系信息
+- **研究生信息**：项目、研究机会、申请流程
+- **联系信息**：部门联系方式、办公室位置
+
+#### 知识库集成
+- 实现了 `SimpleKnowledgeBase` 类
+- 使用 SentenceTransformers 进行语义搜索
+- 集成到 RAG 系统中，用于增强学生回复生成
+
+---
+
+### 2. **UF MAE 网站实时爬虫系统** ✅
+
+#### 功能实现
+创建了 `uf_mae_web_scraper.py` 模块，实现实时网站搜索功能：
+
+**核心功能**：
+1. **课程表搜索** (`search_course_schedule`)
+   - 支持春季、夏季、秋季学期
+   - 可以按课程代码搜索（如 "EML2023"）
+   - 解析 HTML 表格获取课程信息
+   - 返回课程详情（时间、地点、教师等）
+
+2. **网站通用搜索** (`search_website`)
+   - 智能关键词检测（课程、研究、资源、联系方式等）
+   - 搜索主页面相关内容
+   - 返回相关文本片段
+
+3. **特定课程信息** (`get_course_info`)
+   - 获取单个课程的详细信息
+
+**搜索关键词覆盖**：
+- **课程相关**: course, class, schedule, semester, spring, summer, fall, EML, curriculum
+- **研究相关**: research, lab, faculty, professor, advisor, mentor, robotics, aerospace
+- **资源相关**: resource, opportunity, internship, club, organization, funding, scholarship
+- **联系相关**: contact, email, phone, office hours, appointment
+- **其他**: MAE, program, degree, graduate, undergraduate
+
+#### 集成到对话系统
+- **开场问题生成** (`generate_student_opening_with_uf`)
+  - 根据角色调整搜索关键词
+  - DELTA 角色：搜索 internships/clubs（不感兴趣研究）
+  - 其他角色：搜索 courses/research opportunities
+  - 使用实时信息生成更真实的开场问题
+
+- **回复生成** (`generate_student_reply_with_rag_uf`)
+  - 在生成学生回复时自动搜索相关网站信息
+  - 将实时信息添加到知识上下文中
+  - 确保回复包含最新信息
+
+**使用场景示例**：
+- 学生问："What classes are you taking this semester?"
+  - 自动搜索课程表，获取最新课程信息
+- 学生问："I'm interested in robotics research"
+  - 自动搜索网站上的机器人研究信息
+- 学生问："How can I contact the department?"
+  - 自动搜索联系方式信息
+
+#### 技术实现
+- 使用 `requests` 和 `BeautifulSoup` 进行网页解析
+- 错误处理：优雅处理网络错误和解析失败
+- 超时控制：10 秒超时，避免长时间等待
+- 结果限制：最多返回 10 个课程或 5 个搜索结果
+
+---
+
+### 3. **学生角色系统增强** ✅
+
+#### 角色特征细化
+为每个角色添加了更详细的特征和指导：
+
+**DELTA 角色特殊处理**：
+- **特征**: 不感兴趣研究，使用间接语言，犹豫寻求帮助
+- **开场问题**: 避免研究话题，关注 internships/clubs
+- **回复风格**: 间接、犹豫、避免直接求助
+- **搜索调整**: 搜索关键词从 "research" 改为 "internships/clubs"
+
+**所有角色的开场问题增强**：
+- 使用实时网站信息生成更真实的问题
+- 根据角色特征调整问题内容
+- 确保问题符合角色的沟通风格
+
+---
+
+### 4. **环境检测与多语言支持** ✅
+
+#### 环境检测系统
+实现了可靠的环境检测机制：
+
+**检测方法**（多重检查）：
+1. Streamlit Cloud 环境变量检查
+2. 主机名检查（streamlit/cloud）
+3. 系统路径检查（/mount/src/）
+4. HOME 目录检查
+5. 当前工作目录检查
+6. 文件路径检查
+
+**用途**：
+- 区分本地和云端环境
+- 控制调试工具显示（云端隐藏）
+- 控制语言显示（本地中文，云端英文）
+
+#### 多语言消息系统
+- 实现了 `get_error_message()` 函数
+- 支持中英文双语消息
+- 根据环境自动切换语言
+- 覆盖所有错误和状态消息
+
+---
+
+### 5. **错误处理与 Fallback 机制** ✅
+
+#### UF LiteLLM API 错误处理
+- 识别 "meta tensor" 错误（服务器端模型加载问题）
+- 自动切换到 fallback 响应
+- 提供友好的错误提示
+- 避免重复显示错误消息
+
+#### 意图分类 Fallback
+- 三级优先级系统：
+  1. 本地 Hugging Face 模型
+  2. Hugging Face Inference API
+  3. 关键词分类器
+- 每个级别失败时自动降级
+- 确保系统始终可用
+
+---
+
+### 6. **UI/UX 改进** ✅
+
+#### 方法指示器
+- 在意图标签旁显示使用的分类器
+- 本地环境：详细显示（🤖 HF模型, 🌐 HF API, 🔑 关键词）
+- 云端环境：简化显示（🤖, ☁️, 🔑）
+- 帮助用户了解系统状态
+
+#### 对话分析增强
+- 实时显示意图分类结果
+- 显示置信度评分
+- 显示使用的分类器方法
+- 提供对话统计信息
+
+---
+
+### 7. **模型部署与本地加载** ✅
+
+#### Hugging Face 模型集成
+- 实现了本地模型加载（`_load_hf_model_locally`）
+- 使用 `transformers.pipeline` 加载模型
+- 内存检查（需要至少 2GB）
+- 模型缓存（避免重复加载）
+
+#### 模型状态显示
+- 启动时检测模型状态
+- 显示连接状态（connected, loading, local_available 等）
+- 提供专业的状态消息
+- 帮助用户了解系统状态
+
+---
+
+## 📊 知识库与爬虫统计
+
+### 知识库统计
+| 知识库文件 | 条目数 | 内容类型 |
+|-----------|--------|---------|
+| `faq_knowledge.json` | 50 | 常见问题与答案 |
+| `scenario_knowledge.json` | 4 | 角色场景（每个角色多个场景） |
+| `training_knowledge.json` | 50 | 培训指南与建议 |
+| `uf_mae_website_knowledge.json` | 27 | UF MAE 网站结构化信息 |
+| **总计** | **131** | **4 种知识类型** |
+
+### 爬虫功能统计
+- **支持的功能**: 3 个主要功能（课程搜索、网站搜索、课程信息）
+- **搜索关键词**: 30+ 个关键词覆盖多个领域
+- **集成位置**: 2 个主要函数（开场问题生成、回复生成）
+- **错误处理**: 完善的异常处理和超时控制
 
 ---
 
