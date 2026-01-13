@@ -2067,18 +2067,24 @@ def main():
                 i_class = get_intent_badge_class(intent_info["intent"])
                 i_name = escape(str(intent_info["intent"]))  # 转义intent名称
                 i_conf = intent_info["confidence"]
-                # 显示使用的分类器方法（仅在本地环境显示，云端隐藏）
+                # 显示使用的分类器方法（本地环境显示详细，云端显示简化）
                 method = intent_info.get("method", "")
                 method_indicator = ""
-                if is_really_local and method:
-                    method_map = {
-                        "hf_local": "🤖 HF模型",
-                        "hf_api": "🌐 HF API",
-                        "keyword": "🔑 关键词",
-                        "default": "⚙️ 默认"
-                    }
-                    method_display = method_map.get(method, method)
-                    method_indicator = f' <span style="font-size: 0.75em; opacity: 0.7;">({method_display})</span>'
+                if method:
+                    if is_really_local:
+                        # 本地环境：显示详细
+                        method_map = {
+                            "hf_local": "🤖 HF模型",
+                            "hf_api": "🌐 HF API",
+                            "keyword": "🔑 关键词",
+                            "default": "⚙️ 默认"
+                        }
+                        method_display = method_map.get(method, method)
+                        method_indicator = f' <span style="font-size: 0.75em; opacity: 0.7;">({method_display})</span>'
+                    else:
+                        # 云端环境：只显示关键信息（如果使用模型）
+                        if method == "hf_local":
+                            method_indicator = ' <span style="font-size: 0.75em; opacity: 0.7;">(🤖)</span>'
                 badge_html = f'<div class="intent-badge {i_class}">{i_name} • {i_conf:.1%}{method_indicator}</div>'
 
             if role == "student":
