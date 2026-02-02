@@ -33,15 +33,14 @@ def _get_secret(name: str, default: str = "") -> str:
 
 # ---- Model fallback list (sentence generation) ----
 UF_MODEL_FALLBACKS = [
-    # 推荐：质量/稳定性/速度比较均衡
-    "mistral-small-3.1",
-    # 小模型快
-    "llama-3.1-nemotron-nano-8B-v1",
-    "granite-3.3-8b-instruct",
-    # 更大更强但可能慢
-    "gemma-3-27b-it",
+    # 质量优先（更大更强但可能慢）
     "llama-3.3-70b-instruct",
     "llama-3.1-70b-instruct",
+    "gemma-3-27b-it",
+    # 速度/稳定性更好
+    "mistral-small-3.1",
+    "granite-3.3-8b-instruct",
+    "llama-3.1-nemotron-nano-8B-v1",
 ]
 
 

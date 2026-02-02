@@ -278,7 +278,7 @@ def main():
     # Initialize intent classifier
     print("🤖 Loading RoBERTa intent classification model...")
     try:
-        intent_classifier = IntentClassifier("../pre-train/balanced_finetuned_model")
+        intent_classifier = IntentClassifier("../pre-train/checkpoint-3146")
         print("✅ Intent classifier loaded successfully!")
         print("🔍 Intent classification is active for both student and advisor messages.\n")
     except Exception as e:

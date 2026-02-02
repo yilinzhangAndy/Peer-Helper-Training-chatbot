@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class ChatbotPipeline:
-    def __init__(self, model_path="../pre-train/balanced_finetuned_model"):
+    def __init__(self, model_path="../pre-train/checkpoint-3146"):
         self.classifier = IntentClassifier(model_path)
         self.vector_store = VectorStore()
         self.persona_manager = PersonaManager()

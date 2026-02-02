@@ -124,7 +124,7 @@ class IntentClassifier:
 def test_intent_classifier():
     """Test intent classifier"""
     # Use your existing model path
-    model_path = "../pre-train/balanced_finetuned_model"
+    model_path = "../pre-train/checkpoint-3146"
     
     try:
         classifier = IntentClassifier(model_path)
