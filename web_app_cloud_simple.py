@@ -679,7 +679,7 @@ def _apply_history_weighting(result: Dict[str, Any],
                              history_window: int,
                              dominance_threshold: float,
                              confidence_threshold: float) -> Dict[str, Any]:
-    """Mark intent as uncertain when it conflicts with strong recent history."""
+    """Override intent with dominant recent history when confidence is low."""
     bias = _get_recent_intent_bias(intent_history, max_items=history_window)
     if not bias:
         return result
@@ -689,11 +689,9 @@ def _apply_history_weighting(result: Dict[str, Any],
             and dominance_ratio >= dominance_threshold
             and result.get("confidence", 0.0) < confidence_threshold):
         updated = dict(result)
-        updated["display_intent"] = f"Uncertain: {result.get('intent')} / {dominant_intent}"
-        updated["alternatives"] = [result.get("intent"), dominant_intent]
-        updated["is_uncertain"] = True
-        # Neutral confidence to indicate uncertainty for feedback
-        updated["confidence"] = 0.5
+        updated["intent"] = dominant_intent
+        updated["confidence"] = max(result.get("confidence", 0.0), dominance_ratio)
+        updated["method"] = f"{result.get('method', '')}+history".strip("+")
         updated["history_bias"] = {
             "dominant_intent": dominant_intent,
             "dominance_ratio": dominance_ratio
