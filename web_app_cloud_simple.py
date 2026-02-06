@@ -649,7 +649,64 @@ def get_intent_badge_class(intent: str) -> str:
     else:
         return "intent-understanding"
 
-def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
+def _get_recent_intent_bias(intent_history: Optional[List[Dict[str, Any]]],
+                            max_items: int = 6) -> Dict[str, Any]:
+    """Compute dominant intent from recent history for weighting."""
+    if not intent_history:
+        return {}
+    recent = intent_history[-max_items:]
+    counts: Dict[str, int] = {}
+    for info in recent:
+        intent = info.get("intent")
+        if not intent:
+            continue
+        counts[intent] = counts.get(intent, 0) + 1
+    total = sum(counts.values())
+    if total == 0:
+        return {}
+    dominant_intent = max(counts, key=counts.get)
+    dominance_ratio = counts[dominant_intent] / total
+    return {
+        "dominant_intent": dominant_intent,
+        "dominance_ratio": dominance_ratio,
+        "counts": counts,
+        "total": total
+    }
+
+
+def _apply_history_weighting(result: Dict[str, Any],
+                             intent_history: Optional[List[Dict[str, Any]]],
+                             history_window: int,
+                             dominance_threshold: float,
+                             confidence_threshold: float) -> Dict[str, Any]:
+    """Mark intent as uncertain when it conflicts with strong recent history."""
+    bias = _get_recent_intent_bias(intent_history, max_items=history_window)
+    if not bias:
+        return result
+    dominant_intent = bias["dominant_intent"]
+    dominance_ratio = bias["dominance_ratio"]
+    if (dominant_intent != result.get("intent")
+            and dominance_ratio >= dominance_threshold
+            and result.get("confidence", 0.0) < confidence_threshold):
+        updated = dict(result)
+        updated["display_intent"] = f"Uncertain: {result.get('intent')} / {dominant_intent}"
+        updated["alternatives"] = [result.get("intent"), dominant_intent]
+        updated["is_uncertain"] = True
+        # Neutral confidence to indicate uncertainty for feedback
+        updated["confidence"] = 0.5
+        updated["history_bias"] = {
+            "dominant_intent": dominant_intent,
+            "dominance_ratio": dominance_ratio
+        }
+        return updated
+    return result
+
+
+def analyze_intent(text: str, intent_classifier, role: str,
+                   intent_history: Optional[List[Dict[str, Any]]] = None,
+                   history_window: int = 6,
+                   dominance_threshold: float = 0.6,
+                   confidence_threshold: float = 0.7) -> Dict[str, Any]:
     """Analyze intent of a message
     
     Priority order:
@@ -667,11 +724,13 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
             if isinstance(hf_local_result.get("intent"), str):
                 print(f"✅ Using Hugging Face local model for intent classification")
                 print(f"   Intent: {hf_local_result.get('intent')}, Confidence: {hf_local_result.get('confidence'):.3f}")
-                return {
+                result = {
                     "intent": hf_local_result.get("intent", "Unknown"),
                     "confidence": hf_local_result.get("confidence", 0.0),
                     "method": "hf_local"  # Indicate local Hugging Face model was used
                 }
+                return _apply_history_weighting(result, intent_history, history_window,
+                                                dominance_threshold, confidence_threshold)
         except Exception as e:
             # Log error but continue to next option
             error_msg = str(e)
@@ -688,11 +747,13 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         try:
             hf_api_result = hf_classify_via_api(text)
             if isinstance(hf_api_result.get("intent"), str):
-                return {
+                result = {
                     "intent": hf_api_result.get("intent", "Unknown"),
                     "confidence": hf_api_result.get("confidence", 0.0),
                     "method": "hf_api"  # Indicate Hugging Face API was used
                 }
+                return _apply_history_weighting(result, intent_history, history_window,
+                                                dominance_threshold, confidence_threshold)
         except Exception as e:
             # Log error but continue to fallback
             error_msg = str(e)
@@ -703,11 +764,13 @@ def analyze_intent(text: str, intent_classifier, role: str) -> Dict[str, Any]:
         result = intent_classifier.classify(text)
         print(f"🔄 Using keyword classifier for intent classification (fallback)")
         print(f"   Intent: {result.get('intent')}, Confidence: {result.get('confidence'):.3f}")
-        return {
+        result = {
             "intent": result.get("intent", "Unknown"),
             "confidence": result.get("confidence", 0.0),
             "method": "keyword"  # Indicate keyword classifier was used
         }
+        return _apply_history_weighting(result, intent_history, history_window,
+                                        dominance_threshold, confidence_threshold)
     except Exception as e:
         return {
             "intent": "Understanding and Clarification",
@@ -2099,7 +2162,7 @@ def main():
             badge_html = ""
             if intent_info:
                 i_class = get_intent_badge_class(intent_info["intent"])
-                i_name = escape(str(intent_info["intent"]))  # 转义intent名称
+                i_name = escape(str(intent_info.get("display_intent", intent_info["intent"])))  # 转义intent名称
                 i_conf = intent_info["confidence"]
                 # 显示使用的分类器方法（本地环境显示详细，云端显示简化）
                 method = intent_info.get("method", "")
@@ -2172,7 +2235,14 @@ def main():
                         "content": opening_text,
                         "timestamp": datetime.now()
                     })
-                    st.session_state.student_intents.append(analyze_intent(opening_text, intent_classifier, "student"))
+                    st.session_state.student_intents.append(
+                        analyze_intent(
+                            opening_text,
+                            intent_classifier,
+                            "student",
+                            st.session_state.student_intents
+                        )
+                    )
                     st.rerun()  # 仅在第一次启动对话时刷新
 
         # 4. Advisor input - 动态key强制重建输入框（最稳，100%清空）
@@ -2197,7 +2267,12 @@ def main():
 
                 try:
                     if clean_input:
-                        a_intent = analyze_intent(clean_input, intent_classifier, "advisor")
+                        a_intent = analyze_intent(
+                            clean_input,
+                            intent_classifier,
+                            "advisor",
+                            st.session_state.advisor_intents
+                        )
 
                         st.session_state.messages.append({
                             "role": "advisor",
@@ -2250,7 +2325,12 @@ def main():
                                 )
 
                         student_reply_clean = re.sub(r"<[^>]+>", "", student_reply or "").strip()
-                        s_intent = analyze_intent(student_reply_clean, intent_classifier, "student")
+                        s_intent = analyze_intent(
+                            student_reply_clean,
+                            intent_classifier,
+                            "student",
+                            st.session_state.student_intents
+                        )
 
                         st.session_state.messages.append({
                             "role": "student",
