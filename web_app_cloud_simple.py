@@ -12,7 +12,7 @@ import uuid
 # import pandas as pd
 # import io
 # import uuid
-from uf_navigator_api import UFNavigatorAPI
+from uf_navigator_api import UFNavigatorAPI, UF_MODEL_FALLBACKS, _is_retryable_model_error
 from simple_knowledge_base import SimpleKnowledgeBase
 
 # Page configuration
@@ -1297,6 +1297,79 @@ def generate_student_reply_fallback(advisor_message: str, persona: str) -> str:
     except Exception as e:
         return "I'm not sure how to respond to that. Could you help me understand better?"
 
+
+def generate_session_summary(
+    transcript: str,
+    student_intent_counts: Dict[str, int],
+    advisor_intent_counts: Dict[str, int],
+    same_pairs: int,
+    diff_pairs: int,
+    persona: str,
+    persona_info: Dict[str, Any],
+    uf_api: Optional[UFNavigatorAPI],
+    lang: str = "en",
+) -> Optional[str]:
+    """
+    Generate a 3-5 sentence AI summary for the Peer Advisor debrief.
+    Returns None on failure (API error, no client, etc.).
+    """
+    if not uf_api or not uf_api.client:
+        return None
+    student_dist = json.dumps(student_intent_counts) if student_intent_counts else "{}"
+    advisor_dist = json.dumps(advisor_intent_counts) if advisor_intent_counts else "{}"
+    persona_desc = persona_info.get("description", "") if persona_info else ""
+    if lang == "zh":
+        prompt = f"""你是一位同伴顾问培训的分析助手。请根据以下对话和统计数据，用3-5句话为顾问生成一份反思总结。要求覆盖：
+1. 学生主要表达了什么需求（student focus）
+2. 顾问使用了哪些策略，比例是否合理（advisor strategy pattern）
+3. 下次可以尝试什么不同的做法（actionable suggestion）
+
+对话记录：
+{transcript}
+
+学生意图分布：{student_dist}
+顾问意图分布：{advisor_dist}
+同意图配对：{same_pairs}，不同意图配对：{diff_pairs}
+学生角色：{persona.upper()} — {persona_desc}
+
+请用中文回复，3-5句话，简洁实用。"""
+    else:
+        prompt = f"""You are an analyst for peer advisor training. Based on the conversation and statistics below, generate a 3-5 sentence reflection summary for the advisor. Cover:
+1. What needs or concerns the student mainly expressed (student focus)
+2. What strategies you used and whether the proportion seems reasonable (advisor strategy pattern)
+3. What you could try differently next time (actionable suggestion)
+
+Transcript:
+{transcript}
+
+Student intent distribution: {student_dist}
+Advisor intent distribution: {advisor_dist}
+Same-intent pairs: {same_pairs}, Different-intent pairs: {diff_pairs}
+Student persona: {persona.upper()} — {persona_desc}
+
+Respond in 3-5 concise, practical sentences."""
+    messages = [{"role": "user", "content": prompt}]
+    last_err = None
+    for model_name in UF_MODEL_FALLBACKS:
+        try:
+            out = uf_api.generate_chat(
+                messages=messages,
+                model=model_name,
+                max_tokens=200,
+                temperature=0.2,
+            )
+            if out and out.strip():
+                return out.strip()
+        except Exception as e:
+            last_err = e
+            if _is_retryable_model_error(e):
+                continue
+            if uf_api:
+                uf_api.last_error = str(e)
+            return None
+    return None
+
+
 def generate_student_reply(context: str, persona: str, advisor_intent: str) -> str:
     """Generate student reply based on persona and context"""
     persona_info = STUDENT_PERSONAS.get(persona, STUDENT_PERSONAS["alpha"])
@@ -1471,6 +1544,10 @@ def init_session_state():
     st.session_state.setdefault("show_training", False)
     # ✅ 关键：控制输入框动态 key
     st.session_state.setdefault("advisor_box_id", 0)
+    # AI debrief summary (Complete Training)
+    st.session_state.setdefault("session_summary", None)
+    st.session_state.setdefault("session_summary_error", None)
+    st.session_state.setdefault("session_completed", False)
     # ✅ 关键：存储 API 和知识库（避免每次 rerun 重新初始化）
     # 注意：不要在这里设置为 None，让初始化逻辑在 main() 中处理
 
@@ -2124,6 +2201,9 @@ def main():
                 st.session_state.student_intents = []
                 st.session_state.advisor_intents = []
                 st.session_state.session_id = str(uuid.uuid4())[:8]
+                st.session_state.session_summary = None
+                st.session_state.session_summary_error = None
+                st.session_state.session_completed = False
                 
                 # ✅ 关键：新对话输入框从 0 开始
                 st.session_state.advisor_box_id = 0
@@ -2133,6 +2213,65 @@ def main():
                     if k.startswith("advisor_input_"):
                         del st.session_state[k]
                 
+                st.rerun()
+            
+            if st.session_state.messages and st.button("✅ Complete Training", help="Generate AI reflection summary for this session"):
+                with st.spinner("Generating AI reflection summary..."):
+                    # Build transcript
+                    transcript_parts = []
+                    for msg in st.session_state.messages:
+                        role_label = "Student" if msg["role"] == "student" else "Advisor"
+                        transcript_parts.append(f"{role_label}: {msg['content']}")
+                    transcript = "\n".join(transcript_parts)
+                    # Compute stats
+                    student_intent_counts = {}
+                    advisor_intent_counts = {}
+                    for info in st.session_state.student_intents:
+                        intent = info["intent"]
+                        student_intent_counts[intent] = student_intent_counts.get(intent, 0) + 1
+                    for info in st.session_state.advisor_intents:
+                        intent = info["intent"]
+                        advisor_intent_counts[intent] = advisor_intent_counts.get(intent, 0) + 1
+                    same_pairs, diff_pairs = 0, 0
+                    sc, ac = 0, 0
+                    for i in range(1, len(st.session_state.messages)):
+                        if (st.session_state.messages[i-1]["role"] == "student" and
+                                st.session_state.messages[i]["role"] == "advisor"):
+                            if sc < len(st.session_state.student_intents) and ac < len(st.session_state.advisor_intents):
+                                si = st.session_state.student_intents[sc]["intent"]
+                                ai = st.session_state.advisor_intents[ac]["intent"]
+                                if si == ai:
+                                    same_pairs += 1
+                                else:
+                                    diff_pairs += 1
+                            if st.session_state.messages[i-1]["role"] == "student":
+                                sc += 1
+                            if st.session_state.messages[i]["role"] == "advisor":
+                                ac += 1
+                    persona = st.session_state.selected_persona
+                    persona_info = STUDENT_PERSONAS.get(persona, {})
+                    lang = "zh" if is_really_local else "en"
+                    summary = generate_session_summary(
+                        transcript=transcript,
+                        student_intent_counts=student_intent_counts,
+                        advisor_intent_counts=advisor_intent_counts,
+                        same_pairs=same_pairs,
+                        diff_pairs=diff_pairs,
+                        persona=persona,
+                        persona_info=persona_info,
+                        uf_api=uf_api,
+                        lang=lang,
+                    )
+                    if summary:
+                        st.session_state.session_summary = summary
+                        st.session_state.session_summary_error = None
+                    else:
+                        st.session_state.session_summary = None
+                        st.session_state.session_summary_error = (
+                            "AI summary temporarily unavailable. Please try again later."
+                            if lang == "en" else "AI 总结暂时不可用，请稍后再试。"
+                        )
+                    st.session_state.session_completed = True
                 st.rerun()
             
             if st.button("🏠 Back to Home"):
@@ -2348,6 +2487,18 @@ def main():
         # Analysis section
         if st.session_state.messages:
             st.header("Conversation Analysis")
+            
+            # AI reflection summary (when Complete Training was clicked)
+            if st.session_state.session_completed:
+                disclaimer_en = "AI-generated reflection prompt — review with your own judgment."
+                disclaimer_zh = "AI 生成的反思提示 — 请结合自身判断审阅。"
+                disclaimer = disclaimer_zh if is_really_local else disclaimer_en
+                st.caption(disclaimer)
+                if st.session_state.session_summary:
+                    st.info(st.session_state.session_summary)
+                elif st.session_state.session_summary_error:
+                    st.warning(st.session_state.session_summary_error)
+                st.markdown("---")
             
             # Calculate statistics
             student_intent_counts = {}
