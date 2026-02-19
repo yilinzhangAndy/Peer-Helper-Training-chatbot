@@ -4,9 +4,12 @@ UF MAE Website Real-time Scraper
 """
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import re
-from urllib.parse import urljoin, quote
+import time
+import json
+from pathlib import Path
+from urllib.parse import urljoin, urlparse, unquote
 
 
 class UFMAEWebScraper:
@@ -154,6 +157,87 @@ class UFMAEWebScraper:
             print(f"⚠️ Error in website search: {e}")
             return []
     
+    def _is_same_domain(self, url: str) -> bool:
+        """Check if URL belongs to mae.ufl.edu."""
+        parsed = urlparse(url)
+        netloc = parsed.netloc.lower()
+        return "mae.ufl.edu" in netloc or netloc == "mae.ufl.edu"
+
+    def _normalize_url(self, base: str, href: str) -> Optional[str]:
+        """Resolve relative URL and return absolute URL if same domain."""
+        if not href or href.startswith(("#", "mailto:", "tel:", "javascript:", "data:")):
+            return None
+        full = urljoin(base, href)
+        full = full.split("#")[0].rstrip("/") or full
+        if not full.startswith("http"):
+            return None
+        return full if self._is_same_domain(full) else None
+
+    def _extract_text(self, soup: BeautifulSoup) -> str:
+        """Extract main text, skip nav/footer/script."""
+        for tag in soup.find_all(["script", "style", "nav", "footer", "header"]):
+            tag.decompose()
+        text = soup.get_text(separator="\n")
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip() and len(ln.strip()) > 15]
+        return "\n".join(lines[:80])  # cap length per page
+
+    def crawl_full_site(
+        self,
+        start_url: str = None,
+        max_pages: int = 150,
+        max_depth: int = 5,
+        delay_sec: float = 0.6,
+    ) -> List[Dict[str, str]]:
+        """
+        Recursively crawl MAE site (About, People, Undergraduate, Graduate, Research, etc.).
+        Returns list of {url, title, content} for knowledge base.
+        """
+        start_url = start_url or self.BASE_URL
+        if not self._is_same_domain(start_url):
+            return []
+        visited: Set[str] = set()
+        queued: Set[str] = {start_url}
+        results: List[Dict[str, str]] = []
+        queue: List[tuple] = [(start_url, 0)]
+
+        while queue and len(visited) < max_pages:
+            url, depth = queue.pop(0)
+            if url in visited or depth > max_depth:
+                continue
+            visited.add(url)
+            try:
+                resp = self.session.get(url, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.content, "html.parser")
+                title = (soup.find("title") or soup.find("h1"))
+                title_text = title.get_text(strip=True) if title else ""
+                content = self._extract_text(soup)
+                if content and len(content) > 30:
+                    results.append({
+                        "url": url,
+                        "title": title_text or url,
+                        "content": content[:2000],
+                    })
+                for a in soup.find_all("a", href=True):
+                    next_url = self._normalize_url(url, a["href"])
+                    if next_url and next_url not in queued:
+                        queued.add(next_url)
+                        queue.append((next_url, depth + 1))
+                time.sleep(delay_sec)
+            except Exception as e:
+                print(f"⚠️ Skip {url}: {e}")
+        return results
+
+    def crawl_and_save_to_json(self, output_path: str = None, **kwargs) -> str:
+        """Crawl full site and save to JSON. Returns path to saved file."""
+        output_path = output_path or str(Path(__file__).parent / "knowledge_base" / "mae_full_site_knowledge.json")
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        data = self.crawl_full_site(**kwargs)
+        out = [{"question": f"{d['title']} ({d['url']})", "answer": d["content"], "source": d["url"]} for d in data]
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+        return output_path
+
     def get_course_info(self, course_code: str, semester: str = "spring") -> Optional[Dict]:
         """
         获取特定课程的详细信息
@@ -171,28 +255,27 @@ class UFMAEWebScraper:
         return None
 
 
-# 测试代码
+# 测试代码 / 全站爬取
 if __name__ == "__main__":
+    import sys
     scraper = UFMAEWebScraper()
-    
-    print("🔍 测试 UF MAE 网站实时搜索:")
-    print("=" * 60)
-    
-    # 测试1: 搜索课程
-    print("\n1. 搜索课程信息:")
-    results = scraper.search_website("EML2023 spring course", max_results=3)
-    for i, result in enumerate(results, 1):
-        print(f"   {i}. {result[:100]}...")
-    
-    # 测试2: 搜索课程表
-    print("\n2. 搜索课程表:")
-    courses = scraper.search_course_schedule("spring", "EML")
-    print(f"   找到 {len(courses)} 门课程")
-    for i, course in enumerate(courses[:3], 1):
-        print(f"   {i}. {course}")
-    
-    # 测试3: 搜索一般信息
-    print("\n3. 搜索研究领域:")
-    results = scraper.search_website("robotics research", max_results=3)
-    for i, result in enumerate(results, 1):
-        print(f"   {i}. {result[:100]}...")
+
+    if len(sys.argv) > 1 and sys.argv[1] == "crawl":
+        print("🕷️ Crawling full MAE site (About, Undergraduate, Graduate, Research, etc.)...")
+        out_path = scraper.crawl_and_save_to_json(max_pages=150, max_depth=5, delay_sec=0.6)
+        print(f"✅ Saved to {out_path}")
+    else:
+        print("🔍 测试 UF MAE 网站实时搜索:")
+        print("=" * 60)
+        print("\n1. 搜索课程信息:")
+        results = scraper.search_website("EML2023 spring course", max_results=3)
+        for i, result in enumerate(results, 1):
+            print(f"   {i}. {result[:100]}...")
+        print("\n2. 搜索课程表:")
+        courses = scraper.search_course_schedule("spring", "EML")
+        print(f"   找到 {len(courses)} 门课程")
+        print("\n3. 搜索研究领域:")
+        results = scraper.search_website("robotics research", max_results=3)
+        for i, result in enumerate(results, 1):
+            print(f"   {i}. {result[:100]}...")
+        print("\n💡 Run with 'crawl' to crawl full site: python uf_mae_web_scraper.py crawl")

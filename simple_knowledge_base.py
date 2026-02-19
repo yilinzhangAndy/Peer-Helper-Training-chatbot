@@ -34,6 +34,7 @@ class SimpleKnowledgeBase:
         self.training_knowledge = []
         self.faq_knowledge = []
         self.uf_mae_knowledge = []  # UF MAE website knowledge
+        self.mae_full_site_knowledge = []  # Crawled full MAE site (catalog, handbook, etc.)
         self.scenario_knowledge = {}
         
         # Load knowledge files
@@ -59,6 +60,12 @@ class SimpleKnowledgeBase:
             if uf_mae_file.exists():
                 with open(uf_mae_file, 'r', encoding='utf-8') as f:
                     self.uf_mae_knowledge = json.load(f)
+            
+            # Load full MAE site crawl (run: python uf_mae_web_scraper.py crawl)
+            mae_full_file = self.knowledge_base_dir / "mae_full_site_knowledge.json"
+            if mae_full_file.exists():
+                with open(mae_full_file, 'r', encoding='utf-8') as f:
+                    self.mae_full_site_knowledge = json.load(f)
             
             # Load scenario knowledge
             scenario_file = self.knowledge_base_dir / "scenario_knowledge.json"
@@ -102,6 +109,34 @@ class SimpleKnowledgeBase:
                     if len(results) >= max_results:
                         break
         
+        # Search in full MAE site crawl (catalog, handbook, etc.)
+        if len(results) < max_results:
+            for item in self.mae_full_site_knowledge:
+                question = item.get("question", "").lower()
+                answer = item.get("answer", "")
+                if any(keyword in question or keyword in answer.lower()
+                       for keyword in query_lower.split() if len(keyword) > 2):
+                    combined = f"{item.get('question', '')}: {answer}"
+                    if combined not in seen_content:
+                        results.append(combined)
+                        seen_content.add(combined)
+                        if len(results) >= max_results:
+                            break
+
+        # Search in UF MAE website knowledge
+        if len(results) < max_results:
+            for item in self.uf_mae_knowledge:
+                question = item.get("question", "").lower()
+                answer = item.get("answer", "")
+                if any(keyword in question or keyword in answer.lower()
+                       for keyword in query_lower.split() if len(keyword) > 2):
+                    combined = f"{item.get('question', '')}: {answer}"
+                    if combined not in seen_content:
+                        results.append(combined)
+                        seen_content.add(combined)
+                        if len(results) >= max_results:
+                            break
+
         # Search in FAQ knowledge
         if len(results) < max_results:
             for item in self.faq_knowledge:
@@ -157,6 +192,7 @@ if __name__ == "__main__":
     print(f"  Training knowledge: {len(kb.training_knowledge)} items")
     print(f"  FAQ knowledge: {len(kb.faq_knowledge)} items")
     print(f"  UF MAE website knowledge: {len(kb.uf_mae_knowledge)} items")
+    print(f"  MAE full site crawl: {len(kb.mae_full_site_knowledge)} items")
     print(f"  Scenario knowledge: {len(kb.scenario_knowledge)} personas")
     
     # Test search
