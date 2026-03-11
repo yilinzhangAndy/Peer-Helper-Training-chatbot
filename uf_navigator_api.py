@@ -245,7 +245,9 @@ Response:
             "role": "system",
             "content": (
                 "You are a professional academic conversation assistant. "
-                "Always respond in English. Generate natural, direct responses."
+                "Always respond in English. Generate natural, conversational responses "
+                "like a real student would speak in an advising meeting. "
+                "CRITICAL: Your response MUST match the student persona specified in the prompt (alpha/beta/delta/echo) - do not override persona for naturalness."
             ),
         }
         user_msg = {"role": "user", "content": prompt}

@@ -52,6 +52,7 @@ COLUMN_MAPPING = {
 _LOADED_CONVERSATIONS = None
 _LOADED_EXAMPLES = None
 _PDF_DIALOGUES = None  # PDF中提取的对话
+_REAL_TRANSCRIPT_DIALOGUES = None  # 真实转录对话（real dialogue/ALL）
 
 def load_conversations_from_file(file_path: Optional[str] = None) -> List[Dict]:
     """
@@ -251,6 +252,67 @@ def load_pdf_dialogues() -> List[Dict]:
         _PDF_DIALOGUES = []
         return []
 
+
+def load_real_transcript_dialogues() -> List[Dict]:
+    """
+    从 data/real_dialogue_transcripts.json 加载真实转录对话。
+    运行 scripts/parse_transcripts_to_fewshot.py 生成该文件。
+    """
+    global _REAL_TRANSCRIPT_DIALOGUES
+    if _REAL_TRANSCRIPT_DIALOGUES is not None:
+        return _REAL_TRANSCRIPT_DIALOGUES
+    json_path = Path("data/real_dialogue_transcripts.json")
+    if not json_path.exists():
+        _REAL_TRANSCRIPT_DIALOGUES = []
+        return []
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        conversations = []
+        for item in data:
+            conversations.append({
+                "advisor": item.get("advisor", ""),
+                "student": item.get("student", ""),
+                "intent": item.get("intent"),
+                "persona": item.get("persona"),
+                "source": "real_transcript"
+            })
+        _REAL_TRANSCRIPT_DIALOGUES = conversations
+        if conversations:
+            print(f"✅ 从真实转录加载了 {len(conversations)} 个对话对")
+        return conversations
+    except Exception as e:
+        print(f"⚠️ 加载真实转录对话时出错: {e}")
+        _REAL_TRANSCRIPT_DIALOGUES = []
+        return []
+
+
+def _normalize_pair(advisor: str, student: str) -> str:
+    """归一化 (advisor, student) 用于去重比较。"""
+    a = " ".join((advisor or "").lower().split())
+    s = " ".join((student or "").lower().split())
+    return f"{a}|||{s}"
+
+
+def _deduplicate_examples(examples: List[Dict]) -> List[Dict]:
+    """
+    按 (advisor, student) 去重。Excel/PDF/真实转录可能来自同一批对话。
+    优先保留有 intent 或 persona 的条目（Excel 通常有标注）。
+    """
+    seen = {}
+    for ex in examples:
+        key = _normalize_pair(ex.get("advisor"), ex.get("student"))
+        has_meta = bool(ex.get("intent") or ex.get("persona"))
+        if key not in seen:
+            seen[key] = ex
+        elif has_meta and not (seen[key].get("intent") or seen[key].get("persona")):
+            seen[key] = ex
+    result = list(seen.values())
+    if len(result) < len(examples):
+        print(f"   去重: {len(examples)} -> {len(result)} 条（移除 {len(examples) - len(result)} 条重复）")
+    return result
+
+
 def get_few_shot_examples(persona: str, 
                          advisor_message: str,
                          intent: Optional[str] = None,
@@ -277,6 +339,12 @@ def get_few_shot_examples(persona: str,
         pdf_dialogues = load_pdf_dialogues()
         if pdf_dialogues:
             examples_source.extend(pdf_dialogues)
+        # 添加真实转录对话（real dialogue/ALL）
+        real_transcripts = load_real_transcript_dialogues()
+        if real_transcripts:
+            examples_source.extend(real_transcripts)
+        # 去重：Excel/PDF/真实转录可能来自同一批对话，按 (advisor, student) 去重，优先保留有 intent/persona 的
+        examples_source = _deduplicate_examples(examples_source)
     
     if not examples_source:
         # 如果加载失败，返回空列表（系统会fallback到原始方法）
@@ -287,7 +355,8 @@ def get_few_shot_examples(persona: str,
     persona_examples = [
         ex for ex in examples_source 
         if (ex.get("persona") and ex.get("persona").lower() == persona_lower) or
-           ex.get("source") == "pdf_training_package"  # 包含PDF对话（它们可能匹配任何persona）
+           ex.get("source") == "pdf_training_package" or
+           ex.get("source") == "real_transcript"  # 包含PDF对话和真实转录（可能匹配任何persona）
     ]
     
     # 如果没有匹配的persona，使用所有示例
@@ -338,7 +407,9 @@ def get_few_shot_examples(persona: str,
         if intent and example.get("intent"):
             if intent.lower() in example.get("intent", "").lower():
                 score += 5  # 重要加分
-        
+        # 方法4：真实转录偏好（分数接近时优先选真实对话，小幅加分不覆盖明显更相关的示例）
+        if example.get("source") == "real_transcript":
+            score += 0.3
         scored_examples.append((score, example))
     
     # 按分数排序
@@ -535,10 +606,11 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - If you mentioned something before, be consistent
    - Show you're following the conversation
 
-3. **BE NATURAL** - Match the style in the examples above:
+3. **BE NATURAL** - Match the style in the examples above (while strictly following your persona in rule 6):
    - Use conversational language (not overly formal)
-   - Show personality based on your persona
-   - Be authentic, like a real student
+   - Speak like a real student would in an actual advising meeting
+   - Show personality based on your persona; be authentic
+   - Natural tone must NOT override persona - BETA stays hesitant, ECHO stays confident, etc.
 
 4. **BE SPECIFIC** - Give concrete information:
    - Instead of "some courses" → "Physics 1 and Calculus 2"

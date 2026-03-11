@@ -30,6 +30,7 @@ data/*.xlsx
 data/*.xlsm
 data/*.pdf
 data/*.json
+!data/real_dialogue_transcripts.json
 
 # Temporary upload scripts
 upload_model*.py
