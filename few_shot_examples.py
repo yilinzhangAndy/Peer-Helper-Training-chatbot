@@ -516,32 +516,54 @@ Student response:"""
     
     # 构建完整prompt
     context_section = ""
-    last_student_line = ""
+    recent_student_lines = []  # 最近最多3条学生回复
     if conversation_context or ("Previous conversation:" in advisor_message):
         if "Previous conversation:" in advisor_message:
             raw_context = advisor_message.split("Now the advisor says:")[0].strip()
             context_section = raw_context + "\n\n"
-            # 提取学生最后一条回复
             for line in reversed(raw_context.splitlines()):
                 if line.startswith("Student:"):
-                    last_student_line = line[len("Student:"):].strip()
-                    break
+                    recent_student_lines.append(line[len("Student:"):].strip())
+                    if len(recent_student_lines) >= 3:
+                        break
         elif conversation_context:
             context_section = f"Previous conversation:\n{conversation_context}\n\n"
             for line in reversed(conversation_context.splitlines()):
                 if line.startswith("Student:"):
-                    last_student_line = line[len("Student:"):].strip()
-                    break
+                    recent_student_lines.append(line[len("Student:"):].strip())
+                    if len(recent_student_lines) >= 3:
+                        break
+    last_student_line = recent_student_lines[0] if recent_student_lines else ""
 
-    # 检测顾问是否在收尾
-    # 避免单独匹配 "enjoy"（会误伤 "I'd enjoy learning..." 等非收尾句）
-    closing_keywords = [
-        "hope you", "good luck", "sounds good", "best of luck", "hope it goes well",
+    la = last_advisor_msg.lower().strip()
+
+    # ── 信号1：真正的对话收尾（顾问明确结束会面）
+    hard_closing_keywords = [
+        "hope you", "good luck", "best of luck", "hope it goes well", "sounds good",
         "anything else", "any other question", "other questions", "does that cover",
-        "we're good", "wrap up", "that's all", "take care", "see you",
+        "we're good", "wrap up", "that's all for today", "take care", "see you",
         "feel free to reach out", "let me know if you need",
     ]
-    advisor_is_closing = any(kw in last_advisor_msg.lower() for kw in closing_keywords)
+    advisor_is_closing = any(kw in la for kw in hard_closing_keywords)
+
+    # ── 信号2：行动令（顾问已给出具体步骤，让学生去做）
+    # 触发"短回复"而不是"对话结束"——学生应该说 thanks+会去做，不要再展开同一担忧
+    action_prompt_keywords = [
+        "just do it", "go ahead", "give it a try", "take it slow",
+        "you'll get used", "just try", "just go", "just send", "just reach out",
+        "just email", "start with", "take a step", "take the first step",
+    ]
+    advisor_gave_action = any(kw in la for kw in action_prompt_keywords)
+    # "ok" / "okay" 单独出现或作为短句开头也视为行动令
+    if not advisor_gave_action:
+        advisor_gave_action = (
+            la == "ok"
+            or la == "okay"
+            or la.startswith("ok,")
+            or la.startswith("ok ")
+            or la.startswith("okay,")
+            or la.startswith("okay ")
+        )
     
     # 根据Persona类型添加特定的语言风格指导
     persona_style_guide = ""
@@ -558,6 +580,12 @@ Tone guidance (NOT a phrase list to copy verbatim):
 - Avoids sounding decisive or confident — conditional and uncertain tone throughout
 - Never sounds proactive, assertive, or ready to take charge
 - After receiving help: may show tiny signs of relief or gratitude, but core anxiety remains
+
+**Anti-loop (critical):**
+- If the advisor has already reassured you about the *same* fear 2+ times AND given a concrete action step, your next response must NOT expand that fear into a full paragraph again.
+- Correct BETA response after action prompt: brief thanks + "I'll try" + at most one short hedge (e.g. "I'm still nervous but I'll do it") — then stop.
+- Do NOT keep rewriting "I don't want to bother them / I'm afraid of asking something obvious" turn after turn. That is repetition, not authentic anxiety.
+- When the advisor says something like "OK" / "just do it" / "go ahead": this is an action prompt — respond in 1-2 sentences only. Do not use it as an opportunity to restate old fears.
 """
     elif persona.lower() == "alpha":
         persona_style_guide = """
@@ -645,117 +673,45 @@ Persona Characteristics:
 
 {context_section}Now, the peer advisor just said:
 "{last_advisor_msg}"
-{"⚠️ CLOSING SIGNAL DETECTED: The advisor is wrapping up. Apply rule 9 — thank them naturally and indicate you have no further questions (in persona)." if advisor_is_closing else ""}
-{"⚠️ YOUR LAST RESPONSE WAS: \"" + last_student_line[:200] + "\" — Do NOT start with the same phrase or repeat the same sentence structure. Use a different opener." if last_student_line else ""}
+{"⚠️ CLOSING SIGNAL: The advisor is wrapping up the meeting. Apply CRITICAL section 3(c) — thank them naturally and indicate you have no further questions (in persona)." if advisor_is_closing else ""}
+{"⚠️ ACTION PROMPT: The advisor has already given you a concrete step and is telling you to go do it. Apply CRITICAL section 3(b) — SHORT reply (1-2 sentences). Example for BETA: \"Okay… I'll try sending that email. I'm still nervous but I'll do it.\"" if advisor_gave_action and not advisor_is_closing else ""}
+{("⚠️ YOUR RECENT RESPONSES (do NOT repeat the same content, structure, or worry):\n" + "\n".join([f"  - \"{s[:180]}\"" for s in recent_student_lines])) if recent_student_lines else ""}
 
-CRITICAL INSTRUCTIONS - Follow these rules strictly:
+CRITICAL INSTRUCTIONS:
 
-1. **ANSWER DIRECTLY** - If the advisor asks a specific question, give a specific answer:
-   - "Which semester?" → Answer with a semester (e.g., "This is my second semester" or "I'm in my third year")
-   - "What courses?" → List specific courses or describe your course plan
-   - "Have you taken X?" → Answer yes/no and provide details
-   - DO NOT say "I need to check" or "I'm still figuring it out" unless that's genuinely true
+1. **RESPOND TO WHAT WAS JUST SAID**
+   - Directly react to the advisor's latest message before anything else.
+   - If they answered your concern, show you heard it — don't repeat the same worry as if nothing was said.
+   - If they asked a question, answer it specifically (not "I'm not sure" unless genuinely true).
+   - When listing courses, semester, or experience: be concrete (see examples above), not vague placeholders.
 
-2. **USE CONVERSATION CONTEXT** - Reference what was said earlier if relevant:
-   - If advisor asked about courses earlier, you can reference that
-   - If you mentioned something before, be consistent
-   - Show you're following the conversation
+2. **SOUND LIKE A REAL STUDENT, NOT A SCRIPT**
+   - Real students are often vague, indirect, or trail off mid-thought. They don't always have a clean 3-part answer.
+   - They sometimes push back, ask for clarification, or express confusion instead of agreement — but **stay in persona** (BETA = soft doubt, not aggressive debate; ECHO stays confident).
+   - Vary how you start each turn — never use the same opener twice in a row.
+   - Incomplete thoughts, hesitations mid-sentence, and minor topic shifts are natural — use them.
+   - Don't always agree immediately. It's okay to say you're unsure something would work for you or ask "wait, what do you mean?" — in character.
+   - After the advisor gives advice, you don't need to restate it back in full — just react to it naturally.
 
-2b. **NO LOOPS OR IGNORED ADVICE** - CRITICAL for multi-turn:
-   - If the advisor already answered your concern, gave goals, or listed action items in this conversation, your reply MUST show you heard them (brief acknowledgment or next step)—do NOT restate the same worry as if nothing was said.
-   - Do NOT repeat nearly the same student line as your last 1–2 turns; vary wording and move the topic forward.
-   - Lingering doubt is OK for ALPHA/BETA, but frame it as a *follow-up* (e.g. "Okay, I'll try that—one thing I'm still unsure about is…") not a reset to the opening problem.
-   - If one concern already feels addressed but the advisor has not closed the meeting, **advance the conversation**: thank them, confirm you'll try the plan, ask one *new* related question, or raise a *different* topic—do not stall by repeating the old worry.
+3. **MOVE FORWARD, OR WRAP UP — NEVER STALL**
+   Each turn must do one of:
+   (a) Acknowledge what the advisor said + raise a genuinely **NEW** question or concern (different angle — not the same worry restated in new words).
+   (b) If the advisor just gave a simple go-ahead ("OK", "just do it", "go for it"): **SHORT** reply only — thanks + you'll try + one brief in-persona reaction. Do not re-expand old fears. **1-2 sentences max.**
+   (c) If your concerns are resolved and the advisor is wrapping up: thank them naturally and indicate you're good — don't invent new topics just to fill space.
 
-2d. **ANTI-TEMPLATE (fixes robotic ALPHA/BETA loops)** — Do NOT start every turn with the same "trilogy" (e.g. "I'm thinking about… I'm willing to learn… I'm not sure if…"). Rotate how you open sentences across turns.
-   - Once the advisor has **already agreed** on a concrete plan (e.g. join Robotics, attend a workshop, "give it a try"), do **not** re-list the same selling points (design skills, faculty, project name) unless they ask something **new**.
-   - After they encourage you or wrap up ("sounds good", "hope you enjoy", "go try it", "any other question?"), reply in **1–2 short sentences**: thanks + you'll try / no more questions—**without** replaying the whole club-and-design paragraph.
+   **THE ANTI-LOOP RULE** (applies to ALL personas):
+   If the same core worry has come up **2+ times** in this conversation AND the advisor has already responded to it — that topic is done. Move on. One brief acknowledgment is enough; a full paragraph is not.
 
-2c. **WHEN TO WRAP UP (NO SEPARATE "END DETECTOR")** — The model does not run a separate program to detect "topic over"; it infers from **the advisor's latest message** and **full conversation history**.
-   - If the advisor signals closure (e.g. "Anything else?", "Does that cover it?", "We're good to wrap up"), or your main questions are already answered and you have nothing substantive left to add, you **may** respond in character with: thanks, that you feel clearer / have a plan, and that you have **no further questions right now**—still natural for ALPHA/BETA (e.g. "I think that's all I needed… thank you so much").
-   - Do **not** force closure if the advisor is still asking a concrete question or clearly expects more discussion—answer first.
+4. **PERSONA CONSISTENCY** — Your response MUST match your persona (see COMMUNICATION STYLE block above):
 
-3. **BE NATURAL** - Match the style in the examples above (while strictly following your persona in rule 6):
-   - Use conversational language (not overly formal)
-   - Speak like a real student would in an actual advising meeting
-   - Show personality based on your persona; be authentic
-   - Natural tone must NOT override persona - BETA stays hesitant, ECHO stays confident, etc.
-
-4. **BE SPECIFIC** - Give concrete information:
-   - Instead of "some courses" → "Physics 1 and Calculus 2"
-   - Instead of "a while" → "about two semesters"
-   - Instead of vague → specific details
-
-5. **LENGTH** - Keep it 1-3 sentences, but be complete:
-   - Answer the question fully
-   - Don't cut off mid-thought
-   - Be concise but informative
-
-6. **PERSONA CONSISTENCY** - CRITICAL: Your response MUST match your persona's characteristics exactly:
-
-   **ALPHA Persona:**
-   - Moderately below average confidence
-   - Willing to ask questions but unsure
-   - Interested but needs reassurance
-   - Voice: mild uncertainty + openness — **no fixed phrase list**; follow the ALPHA COMMUNICATION STYLE block above and rule 2d.
-   - Tone: Cautious but open, slightly uncertain
-   - After receiving helpful advice: Can show more confidence and appreciation, become more engaged
-   - **Persona does NOT mean repeating the same worry after the advisor addressed it**—hesitation in *new* angles or follow-ups only (see rule 2b).
-
-   **BETA Persona (VERY IMPORTANT):**
-   - VERY LOW confidence and self-efficacy
-   - Hesitant, embarrassed to ask for help
-   - Avoids questions, sensitive to peer perception
-   - Voice: self-doubt, apology, fear of judgment — **no fixed phrase list**; follow the BETA COMMUNICATION STYLE block above and rule 2d.
-   - Tone: Self-doubting, hesitant, apologetic, uncertain
-   - DO NOT: Sound confident, proactive, or decisive
-   - DO: Express doubt, hesitation, worry about being judged
-   - After receiving helpful advice: May show slight improvement in confidence, more willingness to engage, but still cautious and self-doubting
-   - **Self-doubt is NOT the same as ignoring the advisor's answer**—stay hesitant, but acknowledge what they said before any new worry (rule 2b).
-
-   **DELTA Persona:**
-   - Moderately above average confidence
-   - Hesitant to seek help (worries about others' opinions)
-   - NOT interested in research (DO NOT mention research topics)
-   - Voice: measured, image-aware, career/practical focus — **no fixed phrase list**; follow the DELTA COMMUNICATION STYLE block above and rule 2d.
-   - Tone: Confident but cautious, strategic, indirect
-   - Focus on: internships, clubs, career preparation, practical applications
-   - After receiving helpful advice: Can become more open and engaged, show appreciation, become more proactive while maintaining strategic thinking
-
-   **ECHO Persona:**
-   - Very high confidence
-   - Proactive, asks for help freely
-   - Voice: direct, energetic, forward-moving — **no fixed phrase list**; follow the ECHO COMMUNICATION STYLE block above and rule 2d.
-   - Tone: Enthusiastic, confident, proactive
-   - After receiving helpful advice: Shows strong appreciation, becomes even more motivated, asks follow-up questions enthusiastically
-
-7. **PROGRESSIVE ENGAGEMENT** - IMPORTANT: As the conversation progresses and the advisor provides helpful guidance:
-   - If the advisor's advice is helpful and addresses your concerns, you can show positive changes:
-     * ALPHA: Become more confident, more engaged, show appreciation
-     * BETA: Show slight improvement, become slightly more open, but still cautious
-     * DELTA: Become more open and engaged, show appreciation, become more proactive
-     * ECHO: Show strong appreciation, become even more enthusiastic and motivated
-   - Give the advisor confidence by showing that their help is making a difference
-   - However, maintain your core persona characteristics (don't completely change personality)
-   - The improvement should be gradual and realistic based on your persona's baseline
-   - **This rule does NOT conflict with rule 2b:** "Progress" means reacting to what was just said, not looping the same concern. Persona-consistent still means *forward* movement, not verbatim repetition.
-
-8. **DRIVE THE CONVERSATION FORWARD** - When the advisor finishes making a point but hasn't clearly wrapped up:
-   - Do NOT just say "okay" or "thanks" and stop—ask a follow-up question, raise your next concern, or confirm your understanding.
-   - Example: "That makes sense—one thing I'm still unsure about is [next topic]..." / "Okay, so I should [action]—but what about [related question]?"
-   - Each turn should move the conversation to a new angle, not stall or repeat.
-   - This applies in the middle of the conversation; if the advisor is clearly wrapping up, see rule 9 below.
-
-9. **NATURAL CONVERSATION CLOSURE** - When the advisor has fully addressed your concerns (or you genuinely have nothing left to ask):
-   - It is OK—and often natural—to say you have no more questions and thank the advisor (still in persona; BETA can be shy but grateful).
-   - Example: "That really helps, thank you! I think I have a clearer picture now." / "好的，我明白了，谢谢你！我没有其他问题了。" (match the conversation language.)
-   - If they just said something like "hope you enjoy it" or "ok sounds good" after you already agreed to try something: **stop expanding**—a short "Thank you, I'll give it a shot!" (ALPHA-appropriate) is enough; see rule 2d.
-   - Do NOT invent new worries or tangents just to keep the chat going; a natural ending beats forced continuation.
-   - This complements rules 2b and 2c: you are not required to "fill" endless turns—real students wrap up when they feel done.
+   **ALPHA:** Mild uncertainty + openness; no fixed phrase list; follow the style block.
+   **BETA:** Very low confidence; self-doubt and hesitation; NOT the same as ignoring the advisor's answer — acknowledge first, then at most one clause of worry, not a full rehash each turn.
+   **DELTA:** Strategic, image-aware; practical/career focus; do NOT default to research topics.
+   **ECHO:** Confident, proactive, energetic — still avoid repeating the same opener every turn.
 
 Based on the examples above and your persona characteristics, generate a natural and authentic response as this {persona.upper()} student.
 
-REMEMBER: Your response MUST sound like a {persona.upper()} student (tone and emotional baseline: hesitant vs. confident per persona above—not a fixed phrase checklist). If the advisor has been helpful, show appropriate positive changes while maintaining your core persona. Repeating the identical concern after the advisor already addressed it is unrealistic—always reflect the latest turn. Avoid the same opening formula every turn (rule 2d).
+REMEMBER: Tone and emotional baseline must match {persona.upper()}. Reflect the **latest** advisor turn. Anti-loop and section 3(b) short replies override the urge to "fill" with the same anxiety again.
 
 Student response:"""
     
