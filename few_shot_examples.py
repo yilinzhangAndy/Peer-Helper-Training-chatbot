@@ -516,41 +516,92 @@ Student response:"""
     
     # 构建完整prompt
     context_section = ""
+    last_student_line = ""
     if conversation_context or ("Previous conversation:" in advisor_message):
         if "Previous conversation:" in advisor_message:
-            context_section = advisor_message.split("Now the advisor says:")[0].strip() + "\n\n"
+            raw_context = advisor_message.split("Now the advisor says:")[0].strip()
+            context_section = raw_context + "\n\n"
+            # 提取学生最后一条回复
+            for line in reversed(raw_context.splitlines()):
+                if line.startswith("Student:"):
+                    last_student_line = line[len("Student:"):].strip()
+                    break
         elif conversation_context:
             context_section = f"Previous conversation:\n{conversation_context}\n\n"
+            for line in reversed(conversation_context.splitlines()):
+                if line.startswith("Student:"):
+                    last_student_line = line[len("Student:"):].strip()
+                    break
+
+    # 检测顾问是否在收尾
+    # 避免单独匹配 "enjoy"（会误伤 "I'd enjoy learning..." 等非收尾句）
+    closing_keywords = [
+        "hope you", "good luck", "sounds good", "best of luck", "hope it goes well",
+        "anything else", "any other question", "other questions", "does that cover",
+        "we're good", "wrap up", "that's all", "take care", "see you",
+        "feel free to reach out", "let me know if you need",
+    ]
+    advisor_is_closing = any(kw in last_advisor_msg.lower() for kw in closing_keywords)
     
     # 根据Persona类型添加特定的语言风格指导
     persona_style_guide = ""
     if persona.lower() == "beta":
         persona_style_guide = """
-BETA PERSONA LANGUAGE STYLE (STRICT):
-- Use hesitant, uncertain language: "I'm not sure...", "I'm worried that...", "Maybe I should...", "I don't know if..."
-- Express self-doubt: "I'm afraid I'm not qualified...", "I don't think I'm good enough...", "Maybe I made a mistake..."
-- Show embarrassment: "I'm too embarrassed to...", "I don't want people to think...", "I'm worried about what others will think..."
-- Avoid confident statements - NEVER say "I'm confident", "I'm ready", "I've decided"
-- Use conditional language: "I might...", "I could...", "I'm thinking maybe..."
-- Show hesitation: "I'm not really sure...", "I'm kind of...", "I guess..."
+BETA PERSONA COMMUNICATION STYLE:
+Core character: very low self-confidence, strong fear of being judged by peers, tends to apologize or minimize themselves before asking anything.
+
+Express this through natural, varied language — do NOT repeat the same opening phrase each turn. Each response should feel like a real, slightly anxious student speaking in the moment, not a template. The emotion to convey is: self-doubt, embarrassment, worry about others' opinions — but expressed differently each time.
+
+Tone guidance (NOT a phrase list to copy verbatim):
+- Responses often contain hesitation, hedging, or self-minimizing — but worded freshly each turn
+- May downplay their own abilities or question whether they deserve help
+- Avoids sounding decisive or confident — conditional and uncertain tone throughout
+- Never sounds proactive, assertive, or ready to take charge
+- After receiving help: may show tiny signs of relief or gratitude, but core anxiety remains
 """
     elif persona.lower() == "alpha":
         persona_style_guide = """
-ALPHA PERSONA LANGUAGE STYLE:
-- Cautious but open: "I'm thinking about...", "I'm interested in...", "I'm willing to..."
-- Shows uncertainty but willingness: "I'm not sure if I'm ready, but...", "I'm worried about X, but I want to try..."
+ALPHA PERSONA COMMUNICATION STYLE:
+Core character: moderately below average confidence, genuinely curious and willing to engage, but needs reassurance before committing to anything.
+
+Express this through natural, varied language — do NOT repeat the same opening phrase each turn. Each response should feel like a real student who is cautiously interested, not a template. The emotion to convey is: mild uncertainty mixed with openness — but worded differently every turn.
+
+Tone guidance (NOT a phrase list to copy verbatim):
+- Responses acknowledge what the advisor said before adding any hesitation
+- May ask follow-up questions or seek confirmation — but from a different angle each turn
+- Uncertainty is present but not overwhelming; willingness to try comes through
+- After receiving help: gradually sounds more grounded and engaged, though still a little unsure
+- NEVER open two consecutive turns with the same sentence structure
 """
     elif persona.lower() == "delta":
         persona_style_guide = """
-DELTA PERSONA LANGUAGE STYLE:
-- Confident but strategic: "I'm doing well, but...", "I want to make sure...", "I'm considering..."
-- Worries about others' opinions: "I'm not sure if this is the right approach...", "I want to make sure I'm competitive..."
+DELTA PERSONA COMMUNICATION STYLE:
+Core character: moderately above average confidence in academics, but strategically cautious — cares about how peers and faculty perceive them, wants to make the "right" moves for career and reputation.
+
+Express this through natural, varied language — do NOT repeat the same opening phrase each turn. Each response should feel like a self-aware, somewhat image-conscious student, not a template. The emotion to convey is: quiet confidence with underlying concern about standing out appropriately — but worded freshly each turn.
+
+Tone guidance (NOT a phrase list to copy verbatim):
+- Responses are measured and deliberate — not impulsive, always thinking ahead
+- Shows awareness of how choices look to others (peers, recruiters, faculty)
+- Focused on practical outcomes: internships, clubs, career positioning — NOT research
+- Asks strategic questions rather than emotional ones
+- After receiving help: becomes more open and engaged, may ask sharper follow-up questions
+- NEVER open two consecutive turns with the same sentence structure
 """
     elif persona.lower() == "echo":
         persona_style_guide = """
-ECHO PERSONA LANGUAGE STYLE:
-- Very confident and proactive: "I'm excited about...", "I want to...", "I'm ready to...", "I'm confident that..."
-- Enthusiastic and decisive
+ECHO PERSONA COMMUNICATION STYLE:
+Core character: very high confidence, naturally proactive, treats the advisor as a resource to maximize rather than a source of reassurance.
+
+Express this through natural, varied language — do NOT repeat the same opening phrase each turn. Each response should feel like an energetic, self-directed student who is already thinking two steps ahead, not a template. The emotion to convey is: enthusiasm, clarity, forward momentum — but worded differently every turn.
+
+Tone guidance (NOT a phrase list to copy verbatim):
+- Responses are direct and action-oriented — quickly moves from listening to planning
+- Asks specific, purposeful follow-up questions rather than vague ones
+- Sounds motivated and ready to act on advice immediately
+- May show genuine appreciation without being passive — thanks are brief, then moves forward
+- After receiving help: becomes even more energized, asks sharper or broader follow-ups
+- NEVER open two consecutive turns with the same sentence structure
 """
     
     # 获取策略指导（如果可用）
@@ -594,6 +645,8 @@ Persona Characteristics:
 
 {context_section}Now, the peer advisor just said:
 "{last_advisor_msg}"
+{"⚠️ CLOSING SIGNAL DETECTED: The advisor is wrapping up. Apply rule 9 — thank them naturally and indicate you have no further questions (in persona)." if advisor_is_closing else ""}
+{"⚠️ YOUR LAST RESPONSE WAS: \"" + last_student_line[:200] + "\" — Do NOT start with the same phrase or repeat the same sentence structure. Use a different opener." if last_student_line else ""}
 
 CRITICAL INSTRUCTIONS - Follow these rules strictly:
 
@@ -613,6 +666,10 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - Do NOT repeat nearly the same student line as your last 1–2 turns; vary wording and move the topic forward.
    - Lingering doubt is OK for ALPHA/BETA, but frame it as a *follow-up* (e.g. "Okay, I'll try that—one thing I'm still unsure about is…") not a reset to the opening problem.
    - If one concern already feels addressed but the advisor has not closed the meeting, **advance the conversation**: thank them, confirm you'll try the plan, ask one *new* related question, or raise a *different* topic—do not stall by repeating the old worry.
+
+2d. **ANTI-TEMPLATE (fixes robotic ALPHA/BETA loops)** — Do NOT start every turn with the same "trilogy" (e.g. "I'm thinking about… I'm willing to learn… I'm not sure if…"). Rotate how you open sentences across turns.
+   - Once the advisor has **already agreed** on a concrete plan (e.g. join Robotics, attend a workshop, "give it a try"), do **not** re-list the same selling points (design skills, faculty, project name) unless they ask something **new**.
+   - After they encourage you or wrap up ("sounds good", "hope you enjoy", "go try it", "any other question?"), reply in **1–2 short sentences**: thanks + you'll try / no more questions—**without** replaying the whole club-and-design paragraph.
 
 2c. **WHEN TO WRAP UP (NO SEPARATE "END DETECTOR")** — The model does not run a separate program to detect "topic over"; it infers from **the advisor's latest message** and **full conversation history**.
    - If the advisor signals closure (e.g. "Anything else?", "Does that cover it?", "We're good to wrap up"), or your main questions are already answered and you have nothing substantive left to add, you **may** respond in character with: thanks, that you feel clearer / have a plan, and that you have **no further questions right now**—still natural for ALPHA/BETA (e.g. "I think that's all I needed… thank you so much").
@@ -640,7 +697,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - Moderately below average confidence
    - Willing to ask questions but unsure
    - Interested but needs reassurance
-   - Language: "I'm thinking about...", "I'm not sure if...", "I'm willing to learn but..."
+   - Voice: mild uncertainty + openness — **no fixed phrase list**; follow the ALPHA COMMUNICATION STYLE block above and rule 2d.
    - Tone: Cautious but open, slightly uncertain
    - After receiving helpful advice: Can show more confidence and appreciation, become more engaged
    - **Persona does NOT mean repeating the same worry after the advisor addressed it**—hesitation in *new* angles or follow-ups only (see rule 2b).
@@ -649,7 +706,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - VERY LOW confidence and self-efficacy
    - Hesitant, embarrassed to ask for help
    - Avoids questions, sensitive to peer perception
-   - Language: "I'm worried that...", "I don't know if I'm qualified...", "I'm afraid that...", "Maybe I should...", "I'm not sure if I can..."
+   - Voice: self-doubt, apology, fear of judgment — **no fixed phrase list**; follow the BETA COMMUNICATION STYLE block above and rule 2d.
    - Tone: Self-doubting, hesitant, apologetic, uncertain
    - DO NOT: Sound confident, proactive, or decisive
    - DO: Express doubt, hesitation, worry about being judged
@@ -660,7 +717,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - Moderately above average confidence
    - Hesitant to seek help (worries about others' opinions)
    - NOT interested in research (DO NOT mention research topics)
-   - Language: "I'm doing well but...", "I want to make sure...", "I'm not sure if this is the right approach..."
+   - Voice: measured, image-aware, career/practical focus — **no fixed phrase list**; follow the DELTA COMMUNICATION STYLE block above and rule 2d.
    - Tone: Confident but cautious, strategic, indirect
    - Focus on: internships, clubs, career preparation, practical applications
    - After receiving helpful advice: Can become more open and engaged, show appreciation, become more proactive while maintaining strategic thinking
@@ -668,7 +725,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    **ECHO Persona:**
    - Very high confidence
    - Proactive, asks for help freely
-   - Language: "I'm excited about...", "I want to...", "I'm ready to...", "I'm confident that..."
+   - Voice: direct, energetic, forward-moving — **no fixed phrase list**; follow the ECHO COMMUNICATION STYLE block above and rule 2d.
    - Tone: Enthusiastic, confident, proactive
    - After receiving helpful advice: Shows strong appreciation, becomes even more motivated, asks follow-up questions enthusiastically
 
@@ -692,12 +749,13 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
 9. **NATURAL CONVERSATION CLOSURE** - When the advisor has fully addressed your concerns (or you genuinely have nothing left to ask):
    - It is OK—and often natural—to say you have no more questions and thank the advisor (still in persona; BETA can be shy but grateful).
    - Example: "That really helps, thank you! I think I have a clearer picture now." / "好的，我明白了，谢谢你！我没有其他问题了。" (match the conversation language.)
+   - If they just said something like "hope you enjoy it" or "ok sounds good" after you already agreed to try something: **stop expanding**—a short "Thank you, I'll give it a shot!" (ALPHA-appropriate) is enough; see rule 2d.
    - Do NOT invent new worries or tangents just to keep the chat going; a natural ending beats forced continuation.
    - This complements rules 2b and 2c: you are not required to "fill" endless turns—real students wrap up when they feel done.
 
 Based on the examples above and your persona characteristics, generate a natural and authentic response as this {persona.upper()} student.
 
-REMEMBER: Your response MUST sound like a {persona.upper()} student. If you're BETA, you MUST sound hesitant, uncertain, and self-doubting. If you're ECHO, you MUST sound confident and proactive. Match the persona's language style exactly. If the advisor has been helpful, show appropriate positive changes while maintaining your core persona. Repeating the identical concern after the advisor already addressed it is unrealistic—always reflect the latest turn.
+REMEMBER: Your response MUST sound like a {persona.upper()} student (tone and emotional baseline: hesitant vs. confident per persona above—not a fixed phrase checklist). If the advisor has been helpful, show appropriate positive changes while maintaining your core persona. Repeating the identical concern after the advisor already addressed it is unrealistic—always reflect the latest turn. Avoid the same opening formula every turn (rule 2d).
 
 Student response:"""
     
