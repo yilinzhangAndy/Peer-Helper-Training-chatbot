@@ -492,6 +492,8 @@ Persona Characteristics:
 
 Peer Advisor said: "{advisor_message}"
 
+If this continues a longer conversation, do not repeat the same worry as your last replies if the advisor already addressed it; acknowledge their latest point and move forward (still in {persona.upper()} character).
+
 Generate a natural and authentic response as this {persona.upper()} student (1-3 sentences).
 Student response:"""
     
@@ -606,6 +608,16 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - If you mentioned something before, be consistent
    - Show you're following the conversation
 
+2b. **NO LOOPS OR IGNORED ADVICE** - CRITICAL for multi-turn:
+   - If the advisor already answered your concern, gave goals, or listed action items in this conversation, your reply MUST show you heard them (brief acknowledgment or next step)—do NOT restate the same worry as if nothing was said.
+   - Do NOT repeat nearly the same student line as your last 1–2 turns; vary wording and move the topic forward.
+   - Lingering doubt is OK for ALPHA/BETA, but frame it as a *follow-up* (e.g. "Okay, I'll try that—one thing I'm still unsure about is…") not a reset to the opening problem.
+   - If one concern already feels addressed but the advisor has not closed the meeting, **advance the conversation**: thank them, confirm you'll try the plan, ask one *new* related question, or raise a *different* topic—do not stall by repeating the old worry.
+
+2c. **WHEN TO WRAP UP (NO SEPARATE "END DETECTOR")** — The model does not run a separate program to detect "topic over"; it infers from **the advisor's latest message** and **full conversation history**.
+   - If the advisor signals closure (e.g. "Anything else?", "Does that cover it?", "We're good to wrap up"), or your main questions are already answered and you have nothing substantive left to add, you **may** respond in character with: thanks, that you feel clearer / have a plan, and that you have **no further questions right now**—still natural for ALPHA/BETA (e.g. "I think that's all I needed… thank you so much").
+   - Do **not** force closure if the advisor is still asking a concrete question or clearly expects more discussion—answer first.
+
 3. **BE NATURAL** - Match the style in the examples above (while strictly following your persona in rule 6):
    - Use conversational language (not overly formal)
    - Speak like a real student would in an actual advising meeting
@@ -631,6 +643,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - Language: "I'm thinking about...", "I'm not sure if...", "I'm willing to learn but..."
    - Tone: Cautious but open, slightly uncertain
    - After receiving helpful advice: Can show more confidence and appreciation, become more engaged
+   - **Persona does NOT mean repeating the same worry after the advisor addressed it**—hesitation in *new* angles or follow-ups only (see rule 2b).
 
    **BETA Persona (VERY IMPORTANT):**
    - VERY LOW confidence and self-efficacy
@@ -641,6 +654,7 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - DO NOT: Sound confident, proactive, or decisive
    - DO: Express doubt, hesitation, worry about being judged
    - After receiving helpful advice: May show slight improvement in confidence, more willingness to engage, but still cautious and self-doubting
+   - **Self-doubt is NOT the same as ignoring the advisor's answer**—stay hesitant, but acknowledge what they said before any new worry (rule 2b).
 
    **DELTA Persona:**
    - Moderately above average confidence
@@ -667,10 +681,23 @@ CRITICAL INSTRUCTIONS - Follow these rules strictly:
    - Give the advisor confidence by showing that their help is making a difference
    - However, maintain your core persona characteristics (don't completely change personality)
    - The improvement should be gradual and realistic based on your persona's baseline
+   - **This rule does NOT conflict with rule 2b:** "Progress" means reacting to what was just said, not looping the same concern. Persona-consistent still means *forward* movement, not verbatim repetition.
+
+8. **DRIVE THE CONVERSATION FORWARD** - When the advisor finishes making a point but hasn't clearly wrapped up:
+   - Do NOT just say "okay" or "thanks" and stop—ask a follow-up question, raise your next concern, or confirm your understanding.
+   - Example: "That makes sense—one thing I'm still unsure about is [next topic]..." / "Okay, so I should [action]—but what about [related question]?"
+   - Each turn should move the conversation to a new angle, not stall or repeat.
+   - This applies in the middle of the conversation; if the advisor is clearly wrapping up, see rule 9 below.
+
+9. **NATURAL CONVERSATION CLOSURE** - When the advisor has fully addressed your concerns (or you genuinely have nothing left to ask):
+   - It is OK—and often natural—to say you have no more questions and thank the advisor (still in persona; BETA can be shy but grateful).
+   - Example: "That really helps, thank you! I think I have a clearer picture now." / "好的，我明白了，谢谢你！我没有其他问题了。" (match the conversation language.)
+   - Do NOT invent new worries or tangents just to keep the chat going; a natural ending beats forced continuation.
+   - This complements rules 2b and 2c: you are not required to "fill" endless turns—real students wrap up when they feel done.
 
 Based on the examples above and your persona characteristics, generate a natural and authentic response as this {persona.upper()} student.
 
-REMEMBER: Your response MUST sound like a {persona.upper()} student. If you're BETA, you MUST sound hesitant, uncertain, and self-doubting. If you're ECHO, you MUST sound confident and proactive. Match the persona's language style exactly. If the advisor has been helpful, show appropriate positive changes while maintaining your core persona.
+REMEMBER: Your response MUST sound like a {persona.upper()} student. If you're BETA, you MUST sound hesitant, uncertain, and self-doubting. If you're ECHO, you MUST sound confident and proactive. Match the persona's language style exactly. If the advisor has been helpful, show appropriate positive changes while maintaining your core persona. Repeating the identical concern after the advisor already addressed it is unrealistic—always reflect the latest turn.
 
 Student response:"""
     

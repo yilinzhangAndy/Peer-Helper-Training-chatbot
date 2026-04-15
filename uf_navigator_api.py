@@ -140,18 +140,22 @@ class UFNavigatorAPI:
         max_tokens: int = 180,
         temperature: float = 0.8,
         top_p: float = 0.95,
+        presence_penalty: float = 0.0,
     ) -> str:
         if not self.client:
             raise RuntimeError(self.last_error or "Client not initialized.")
 
         try:
-            resp = self.client.chat.completions.create(
+            kwargs = dict(
                 model=model,
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
             )
+            if presence_penalty and presence_penalty > 0:
+                kwargs["presence_penalty"] = presence_penalty
+            resp = self.client.chat.completions.create(**kwargs)
             return (resp.choices[0].message.content or "").strip()
         except Exception as e:
             # 捕获并重新抛出，让上层可以判断是否是可重试的错误
@@ -266,6 +270,7 @@ Response:
                     model=model_name,
                     max_tokens=250,
                     temperature=0.8,
+                    presence_penalty=0.15,
                 )
 
                 reply = re.sub(r"<[^>]+>", "", reply).strip()

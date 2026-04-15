@@ -778,73 +778,21 @@ def analyze_intent(text: str, intent_classifier, role: str,
 
 def get_smart_conversation_history(conversation_history: List[Dict], 
                                   current_message: str,
-                                  max_messages: int = 6) -> str:
+                                  max_messages: int = 12) -> str:
     """
-    智能选择最相关的对话历史
-    
-    Args:
-        conversation_history: 完整对话历史
-        current_message: 当前advisor消息
-        max_messages: 最大消息数量
-    
-    Returns:
-        格式化的对话历史文本
+    构建用于生成的对话历史（按时间顺序的最近若干条）。
+
+    原先按「与当前句关键词重叠」抽样历史，会破坏叙事顺序，导致模型看不到顾问刚给出的行动项/结论，学生侧容易重复同一担忧。现改为严格时间顺序的尾部窗口。
     """
     if not conversation_history:
         return ""
-    
-    # 提取当前消息的关键词
-    current_words = set(current_message.lower().split())
-    stop_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 
-                 'to', 'of', 'and', 'or', 'but', 'in', 'on', 'at', 'for', 
-                 'with', 'by', 'from', 'as', 'this', 'that', 'these', 'those',
-                 'so', 'do', 'does', 'did', 'can', 'could', 'will', 'would',
-                 'have', 'has', 'had', 'what', 'which', 'when', 'where', 'why', 'how',
-                 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'}
-    current_words = current_words - stop_words
-    
-    # 为每条历史消息评分
-    scored_messages = []
-    for msg in conversation_history:
-        msg_text = msg.get('content', '').lower()
-        msg_words = set(msg_text.split()) - stop_words
-        
-        # 计算相关性（共同关键词）
-        common_words = current_words & msg_words
-        relevance = len(common_words)
-        
-        # 问题消息加分（通常更重要）
-        if msg.get('role') == 'advisor':
-            relevance += 1
-        
-        # 最近的消息加分（时间衰减）
-        msg_index = conversation_history.index(msg)
-        recency_bonus = max(0, (len(conversation_history) - msg_index) * 0.1)
-        relevance += recency_bonus
-        
-        scored_messages.append((relevance, msg_index, msg))
-    
-    # 选择最相关的消息
-    scored_messages.sort(key=lambda x: x[0], reverse=True)
-    selected_indices = set()
-    selected_messages = []
-    
-    for relevance, msg_index, msg in scored_messages[:max_messages * 2]:  # 多选一些，然后筛选
-        if len(selected_messages) >= max_messages:
-            break
-        if msg_index not in selected_indices:
-            selected_indices.add(msg_index)
-            selected_messages.append((msg_index, msg))
-    
-    # 按时间顺序排序
-    selected_messages.sort(key=lambda x: x[0])
-    
-    # 格式化
+
+    tail = conversation_history[-max_messages:]
     context_parts = []
-    for _, msg in selected_messages:
-        role_label = "Advisor" if msg["role"] == "advisor" else "Student"
-        context_parts.append(f"{role_label}: {msg['content']}")
-    
+    for msg in tail:
+        role_label = "Advisor" if msg.get("role") == "advisor" else "Student"
+        context_parts.append(f"{role_label}: {msg.get('content', '')}")
+
     return "\n".join(context_parts) if context_parts else ""
 
 def get_realtime_uf_mae_info(query_text: str, max_results: int = 3) -> str:
@@ -917,7 +865,7 @@ def generate_student_reply_with_rag_uf(advisor_message: str, persona: str, uf_ap
             context_text = get_smart_conversation_history(
                 conversation_history, 
                 advisor_message,
-                max_messages=6
+                max_messages=12
             )
         
         # 3. 如果有上下文，添加到 advisor_message 中
